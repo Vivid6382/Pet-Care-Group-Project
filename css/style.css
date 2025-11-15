@@ -1,0 +1,273 @@
+:root {
+    --color1: rgb(82, 113, 255);
+    --color2: rgb(226, 244, 255);
+    --color3: rgb(194, 232, 255);
+    --color4: black;
+    --color5: white;
+    --h1: 30px; /*big text*/
+    --h2: 15px; /*small text*/
+    --h3: 20px; /*medium text*/
+    --size1: 1;
+    --size-title: 40px;
+    --border1 :5px;
+    --padding1: 10px 20px 10px 20px;
+    --padding2: 20px 40px 20px 40px;
+    --padding3: 0px 40px 0px 40px;
+    --margin1: 10px 20px 10px 20px;
+    --font-weight2: 700;
+    --font-weight3: bolder;
+    --font-weight: normal;
+}
+*{
+    padding: 0;
+    margin:0;
+}
+body{
+    background-color: var(--color2);
+}
+/* Global shit */
+a {
+    display:block;
+    text-decoration:none;
+    text-align: center;
+    padding: var(--padding1);
+    color: var(--color4);
+    background-color: var(--color5);
+    border: var(--border1) solid var(--color5);
+    border-radius: 50px;        
+    cursor: pointer;
+    font-size: var(--size1);
+    transition: all 0.2s ease;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+a:hover {
+    background-color: var(--color5);      
+    color: var(--color4);      
+    border: var(--border1) solid var(--color4);  
+    border-radius: 50px;
+}
+h1{ /*Big text*/
+    display:block;
+    text-align: center;
+    font-size:var(--h1);
+    font-weight: var(--font-weight3);
+    box-sizing: border-box;
+}
+h2{ /*small text*/
+    display:block;
+    text-align: center;
+    font-size:var(--h2);
+    font-weight: var(--font-weight2);
+    box-sizing: border-box;
+}
+h3{ /*big text but without bold*/
+    display:block;
+    text-align: left;
+    font-size:var(--h1);
+    font-weight: var(--font-weight);
+    box-sizing: border-box;
+}
+h4{ /*big text but with white background, round border*/
+    display: block;
+    width: 60%;
+    margin: 0 auto;
+    font-size:var(--h1);
+    font-weight: var(--font-weight2);
+    color: var(--color4);
+    background-color: var(--color5);
+    border: var(--border1) solid var(--color4);
+    border-radius: 50px;
+    font-size: var(--h1);
+    padding: var(--padding1);
+    text-align: center;
+}
+form{
+    align-items: center;
+    box-sizing: border-box;
+}
+textarea {
+    display:block;
+    margin: 0 auto;
+    width:80vw;
+    height:30vh;
+    background: var(--color5);
+    color: var(--color4);
+    border: var(--border1) solid var(--color4);
+    padding: var(--padding1);
+    font-weight: var(--font-weight2);
+    font-size: var(--h3);
+    resize: none; 
+    outline: none;
+}
+input[type="submit"]{
+    display:block;
+    width: 40%;
+    margin: 0 auto;
+    font-size: var(--h3);
+    font-weight: var(--font-weight2);
+    color: var(--color5);
+    background-color: var(--color1);
+    border: var(--border1) solid var(--color4);
+    border-radius: 50px;
+    font-size: var(--h1);
+    padding: var(--padding1);
+    text-align: center;
+    box-sizing: border-box;
+}
+/*All of this is just for the sticky header alone*/
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index:900;
+    transition:none;
+    box-sizing: border-box;
+}
+.site-title { /* The "logo" */
+    text-decoration:none;
+    font-weight: bolder;
+    color: var(--color1);
+    font-size: var(--size-title);
+    border:none;
+    border-radius: 0;
+}
+.site-title:hover {
+    text-decoration:none;
+    color: var(--color1);
+    padding: var(--padding1);
+    font-size: var(--size-title);
+    border:none;
+    border-radius: 0;
+}
+.wrap { /* This wrap every content in header*/
+    list-style:none;
+    background: var(--color5);
+    display:flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.wrap li {
+    display: inline-block;
+    position:relative;
+    background: var(--color5);
+}
+.wrap li .sub-menu li{
+    display:block;
+}
+.wrap li .sub-menu{
+    background: var(--color5);
+    position:absolute;
+    z-index:999;
+    display:none;
+}
+.wrap li:hover .sub-menu {
+    display:block;
+}
+.a2 {
+    background-color: var(--color5);        
+    color: var(--color4);                   
+    border: var(--border1) solid var(--color4);
+}
+.a2:hover {
+    background-color: var(--color4);
+    color: var(--color5);
+}
+.sub-menu li a{
+    border: var(--border1) solid var(--color4);
+    padding: var(--padding1);
+    color: var(--color4);
+    border-radius: 0;
+}
+.sub-menu li a:hover{
+    border-radius: 0;
+    color: var(--color5);
+    background-color: var(--color4);
+}
+/* Starting of main content*/
+.wrap2 { /*Information tab*/
+    list-style:none;
+    display:flex;
+    justify-content: space-evenly;
+    align-items: center;
+    background: var(--color1);
+    padding: var(--padding2);
+}
+.wrap2 li{
+    color: var(--color5);
+    display: inline-block;
+    position:relative;
+    border: var(--border1);
+}
+.container{ /*every other div ever*/
+    display:flex;
+    width:100%;
+    height: 100vh;
+    justify-content: space-evenly;
+}
+.container div{
+    padding: var(--padding1);
+    margin: auto;
+    box-sizing: border-box;
+}
+.container div a{
+    margin: 0 auto;
+    width:80%;
+    font-size: var(--h3);
+}
+.container div h1{
+    line-height: 80px;
+}
+.container div a{
+    border: var(--border1) solid var(--color4);  
+}
+.container div a:hover{
+    background-color: var(--color4);
+    color: var(--color5);
+}
+.container div h2{
+    position: relative;
+    inset: auto auto 0 0;
+}
+.container div img{
+    width:60%;
+    margin: var(--margin1);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.leftdiv{
+    flex:1;
+}
+.rightdiv{
+    flex:1;
+}
+.middlediv{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+
+}
+#container1{
+    background-color: var(--color3);
+    background-image: url('../images/banner.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-blend-mode: overlay;
+}
+#container2 img{
+    width:80%;
+    margin: var(--margin1);
+    display: block;
+    margin: 0 auto;
+}
+#container3{
+    background-color: var(--color3);
+    padding: var(--padding3);
+    box-sizing: border-box;
+}
+#container3 h2{
+    font-size: var(--h3);
+}
+/*This shit is for the footing of the website*/
+
