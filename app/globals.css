@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Global stuff */
+h1{ /*Big text*/
+    display:block;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+h2{ /*small text*/
+    display:block;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+h3{ /*Big text but thin*/
+    display:block;
+    margin: 0 auto;
+    font-size: 2rem;
+    font-weight: normal;
+    box-sizing: border-box;
+}
+.commonbtn {
+    display:block;
+    text-decoration:none;
+    text-align: center;
+    padding: 0.75rem;
+    color: black;
+    background-color: white;
+    border: 4px solid white;
+    border-radius: 50px;        
+    cursor: pointer;
+    font-size: 1.25rem;
+    transition: all 0.2s ease;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+.commonbtn:hover {
+    background-color: white;      
+    color: black;      
+    border: 4px solid black;  
+    border-radius: 50px;
+}
+.commonbtn2 {
+    display:block;
+    text-decoration:none;
+    text-align: center;
+    padding: 0.75rem;
+    color: black;
+    background-color: white;
+    border: 4px solid black;
+    border-radius: 50px;        
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    font-weight: bold;
+    box-sizing: border-box;
+    width:50%;
+    margin: 0 auto;
+}
+.commonbtn2:hover {
+    background-color: black;      
+    color: white;  
+    border: 4px solid black;  
+    border-radius: 50px;
+}
+.bluewrap {
+    list-style:none; 
+    display:flex;
+    justify-content: space-evenly;
+    text-align: center;
+    align-items: center;
+    background-color: oklch(62.3% 0.214 259.815); /* blue 500 */
+    padding: 0.5rem;
+}
