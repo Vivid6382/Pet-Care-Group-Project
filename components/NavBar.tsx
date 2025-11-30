@@ -10,7 +10,7 @@ const NavBar = () => {
     <div className="sticky top-0 z-40 transition-none box-border">
         <ul className="list-none bg-white flex w-full p-4 justify-around gap-5 items-center">
             <li><Link className="decoration-0 font-extrabold text-blue-500 text-5xl cursor-pointer" href="#">PetCare 🐾</Link></li>
-            <li><Link className="commonbtn" href="calculator">Pet feeding <br/>calculator 🍖</Link></li>            
+            <li><Link className="commonbtn" href="/calculator">Pet feeding <br/>calculator 🍖</Link></li>            
             <li><Link className="commonbtn" href="calendar">Pet events <br/>calendar 📅</Link></li>            
             <li><Link className="commonbtn" href="tracker">Tracking pet <br/>health 📊</Link></li>
             <li className="group">
