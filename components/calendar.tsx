@@ -296,7 +296,9 @@ export default function PetCalendar() {
   const selectedEvents = getEventsForDate(selectedDate);
 
   return (
-    <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-200 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
+    <div className="relative flex bg-cover bg-center bg-no-repeat p-6 gap-6 min-h-[600px]" style={{ backgroundImage: "url('/paw-background.png')" }}>
+      {/* Overlay semi-transparent optionnel */}
+      <div className="absolute inset-0 bg-white bg-opacity-60 -z-10"></div>
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -332,7 +334,7 @@ export default function PetCalendar() {
       )}
 
       {/* Left side - Calendar */}
-      <div className="flex-shrink-0 w-[500px]">
+      <div className="flex-shrink-0 w-[500px] max-h-[800px] overflow-y-auto">
         <div className="mb-6 flex items-center gap-3">
           <button
             onClick={goToToday}
@@ -489,7 +491,7 @@ export default function PetCalendar() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 max-h-[700px] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -504,7 +506,7 @@ export default function PetCalendar() {
           </div>
 
           {showAddEvent && (
-            <div className="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+            <div className="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50 max-h-[500px] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="font-semibold">New Pet Event</h4>
                 <button onClick={() => setShowAddEvent(false)}>
