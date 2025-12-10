@@ -112,7 +112,7 @@ const Home = () => {
               {/* nút calculate */}
               <button 
                 onClick={handleCalculate}
-                className="w-full mt-2 bg-[#5B5FFF] text-white text-lg md:text-xl font-black py-3 rounded-full border-[3px] border-black hover:bg-blue-700 hover:shadow-lg transition-all flex justify-center items-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none"
+                className="block mx-auto w-full font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center hover:bg-white hover:text-blue-500 transition-all duration-200"
               >
                 CALCULATE ➤
               </button>
@@ -148,7 +148,7 @@ const Home = () => {
       </div>
 
       {/* Phần Advice */}
-      <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-200 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
+      <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
         <div className="flex-1 items-center justify-center p-3 ">
           <label form="feedback"><h2>Little advice</h2></label><br/>
           <textarea className="block mx-auto w-3/4 h-80 bg-white text-black border-4 border-black p-4 font-bold resize-none outline-0" id="feedback" name="feedback" placeholder="Your feedback,"></textarea>
