@@ -114,7 +114,7 @@ const Tracker = () => {
 
             {/* Age */}
             <div className="bg-white border-2 border-black rounded-lg overflow-hidden flex items-center px-4">
-              <label className="font-bold text-xl min-w-[80px]">Age:</label>
+              <label className="font-bold text-xl min-w-20">Age:</label>
               <input 
                 type="number" 
                 name="age" 

@@ -1,5 +1,7 @@
+import BlueButton from '@/components/BlueButton'
 import Footer from '@/components/Footer'
 import NavBar from '@/components/NavBar'
+import Link from 'next/link'
 import React from 'react'
 
 const Home = () => {
@@ -19,7 +21,7 @@ const Home = () => {
       <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-100 bg-[url('/images/syringe-on-dog.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
         <div className="flex-1">
           <h1>Because your pet<br/>deserve better care</h1>
-          <a className='commonbtn2'>GET STARTED ➜</a>
+          <Link className='commonbtn2' href='/'>GET STARTED ➜</Link>
           <h2>Contact us : XXX-XXX-XXX </h2>
         </div>
         <div className='flex-1'>
@@ -34,7 +36,7 @@ const Home = () => {
         <div className='flex-1'>
           <h1>About us</h1>
           <h3 className='w-3/4'>PetCare🐾 brings technology and love together to care for pets.<br/>Track feeding, plan events, and monitor health — all in one simple, friendly website.</h3>
-          <a className='commonbtn2'>GET STARTED ➜</a>
+          <Link className='commonbtn2' href='/'>GET STARTED ➜</Link>
         </div>
       </div>
 
@@ -45,7 +47,7 @@ const Home = () => {
           <label form="feedback"><h2>We truly appreciate your feedback! Feel free to contact us anytime at </h2></label><br/>
           <textarea className="block mx-auto w-3/4 h-60 bg-white text-black border-4 border-black p-4 font-bold resize-none outline-0" id="feedback" name="feedback" placeholder="Your feedback,"></textarea>
           <br/>
-          <input className="block mx-auto w-2/5 font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center hover:bg-white hover:text-blue-500 transition-all duration-200" type="submit" value="Send ➤"></input>
+          <BlueButton>Submit</BlueButton>
           </form>
         </div>
       </div>
