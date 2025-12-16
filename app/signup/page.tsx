@@ -1,12 +1,22 @@
 'use client'
 
 import Image from 'next/image'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import BlueButton from '@/components/BlueButton'
 import { useRouter } from 'next/navigation'
 import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth'
 import { auth, db } from '../firebase'
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore'
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from 'firebase/firestore'
+import Link from 'next/link'
 
 export default function SignUp() {
   const router = useRouter()
@@ -17,8 +27,19 @@ export default function SignUp() {
   const [error, setError] = useState('')
   const [localLoading, setLocalLoading] = useState(false)
 
-  const [createUserWithEmailAndPassword] =
-    useCreateUserWithEmailAndPassword(auth)
+  const [
+    createUserWithEmailAndPassword,
+    userCredential,
+    loading,
+    authError,
+  ] = useCreateUserWithEmailAndPassword(auth)
+
+  useEffect(() => {
+    if (authError) {
+      setError(authError.message)
+      setLocalLoading(false)
+    }
+  }, [authError])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,17 +57,18 @@ export default function SignUp() {
     }
 
     try {
-      // ✅ Check username uniqueness
-      const usernameDocRef = doc(db, 'usernames', trimmedUsername)
-      const docSnap = await getDoc(usernameDocRef)
+      // ✅ Check username uniqueness by querying the users collection
+      const usersRef = collection(db, 'users')
+      const q = query(usersRef, where('username', '==', trimmedUsername), limit(1))
+      const querySnap = await getDocs(q)
 
-      if (docSnap.exists()) {
+      if (!querySnap.empty) {
         setError(`The username "${trimmedUsername}" is already taken.`)
         setLocalLoading(false)
         return
       }
 
-      // ✅ Create user (EMAIL REQUIRED)
+      // Create user 
       const userCredential = await createUserWithEmailAndPassword(
         trimmedEmail,
         password
@@ -56,20 +78,15 @@ export default function SignUp() {
 
       const user = userCredential.user
 
-      // ✅ Save user document
+      // Save user document (single source of truth)
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         username: trimmedUsername,
         email: trimmedEmail,
-        isAnonymous: false,
         createdAt: serverTimestamp(),
       })
 
-      // ✅ Reserve username
-      await setDoc(doc(db, 'usernames', trimmedUsername), {
-        uid: user.uid,
-        createdAt: serverTimestamp(),
-      })
+      // NOTE: removed reservation document in a separate 'usernames' collection.
 
       router.push('/')
     } catch (err: any) {
@@ -92,9 +109,7 @@ export default function SignUp() {
 
       <div className="min-h-screen flex items-center justify-center font-sans">
         <div className="w-full max-w-lg border-2 border-black rounded-xl p-12 bg-blue-200 relative">
-          <div className="flex justify-center font-extrabold text-black text-5xl mb-8">
-            PetCare 🐾
-          </div>
+          <Link className="flex justify-center font-extrabold text-black text-5xl mb-8 cursor-pointer" href="/">PetCare 🐾</Link>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <input
