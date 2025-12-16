@@ -19,7 +19,7 @@ const BlueButton = ({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`block mx-auto w-2/5 font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center transition-all duration-200
+      className={`block mx-auto w-1/2 font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center transition-all duration-200
         hover:bg-white hover:text-blue-500
         disabled:opacity-50 disabled:cursor-not-allowed`}
     >
