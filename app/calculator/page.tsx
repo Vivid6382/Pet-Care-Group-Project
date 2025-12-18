@@ -51,19 +51,13 @@ const Home = () => {
       </div>
 
       {/* calculator */}
-      <div className="flex flex-col w-full min-h-screen justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-10 gap-8">
+      <div className="flex flex-col w-full h-full justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-10 gap-8">
         
         {/* Tiêu đề */}
-        <div className="z-10">
-          <div className="bg-white border-[3px] border-black rounded-full px-16 py-3 shadow-lg">
-            <h2 className="text-2xl md:text-4xl font-black text-black tracking-wide uppercase">
-              CALCULATE TIME
-            </h2>
-          </div>
-        </div>
+<p className='block w-2/5 mx-auto font-bold text-4xl text-black bg-white border-black border-4 rounded-full p-3 text-center'>CALCULATE TIME</p><br/>
 
         {/* bảng */}
-        <div className="z-10 w-full max-w-6xl px-4">
+        <div className="z-10 w-full max-w-6xl px-4 ">
           <div className="bg-[#93C5FD] rounded-[40px] p-10 border-none shadow-xl flex flex-col md:flex-row items-center justify-between gap-10">
             
             {/* cột nhập liệu */}
@@ -112,7 +106,7 @@ const Home = () => {
               {/* nút calculate */}
               <button 
                 onClick={handleCalculate}
-                className="w-full mt-2 bg-[#5B5FFF] text-white text-lg md:text-xl font-black py-3 rounded-full border-[3px] border-black hover:bg-blue-700 hover:shadow-lg transition-all flex justify-center items-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none"
+                className="block mx-auto w-full font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center hover:bg-white hover:text-blue-500 transition-all duration-200"
               >
                 CALCULATE ➤
               </button>
@@ -148,7 +142,7 @@ const Home = () => {
       </div>
 
       {/* Phần Advice */}
-      <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-200 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
+      <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
         <div className="flex-1 items-center justify-center p-3 ">
           <label form="feedback"><h2>Little advice</h2></label><br/>
           <textarea className="block mx-auto w-3/4 h-80 bg-white text-black border-4 border-black p-4 font-bold resize-none outline-0" id="feedback" name="feedback" placeholder="Your feedback,"></textarea>
