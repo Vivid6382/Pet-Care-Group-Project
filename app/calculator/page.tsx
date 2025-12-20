@@ -49,21 +49,15 @@ const Home = () => {
           <li><h1 className='text-white text-center'>Know exactly how much to feed <br /> no more guesswork</h1></li>
         </ul>
       </div>
-
       {/* calculator */}
-      <div className="flex flex-col w-full min-h-screen justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-10 gap-8">
+      <div className="flex flex-col w-full h-full justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-5 gap-5">
         
         {/* Tiêu đề */}
-        <div className="z-10">
-          <div className="bg-white border-[3px] border-black rounded-full px-16 py-3 shadow-lg">
-            <h2 className="text-2xl md:text-4xl font-black text-black tracking-wide uppercase">
-              CALCULATE TIME
-            </h2>
-          </div>
-        </div>
+      <p className='block w-2/5 mx-auto font-bold text-4xl text-black bg-white border-black border-4 rounded-full p-3 text-center'>CALCULATE TIME</p>
+
 
         {/* bảng */}
-        <div className="z-10 w-full max-w-6xl px-4">
+        <div className="w-full max-w-6xl px-4">
           <div className="bg-[#93C5FD] rounded-[40px] p-10 border-none shadow-xl flex flex-col md:flex-row items-center justify-between gap-10">
             
             {/* cột nhập liệu */}
@@ -91,8 +85,8 @@ const Home = () => {
                   onChange={(e) => setActivity(e.target.value)}
                 >
                   <option value="">Select Activity Level</option>
-                  <option value="low">Low (1.2)</option>
-                  <option value="normal">Normal (1.4)</option>
+                  <option value="low">Sedentary (1.2)</option>
+                  <option value="normal">Moderately (1.4)</option>
                   <option value="high">High (2.0)</option>
                 </select>
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-xl font-bold">⌄</div>
@@ -148,11 +142,46 @@ const Home = () => {
       </div>
 
       {/* Phần Advice */}
-      <div className="flex w-full h-screen justify-center p-5 items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
-        <div className="flex-1 items-center justify-center p-3 ">
-          <label form="feedback"><h2>Little advice</h2></label><br/>
-          <textarea className="block mx-auto w-3/4 h-80 bg-white text-black border-4 border-black p-4 font-bold resize-none outline-0" id="feedback" name="feedback" placeholder="Your feedback,"></textarea>
-          <br/>
+<div className="flex flex-col w-full h-full justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-14 gap-14">
+        <div className="bg-white border-[3px] border-black rounded-[30px] p-8 md:p-12 shadow-xl max-w-4xl w-full">
+            
+            <h2 className="flex items-center gap-6 p-2 ">note</h2>
+
+<div className="flex flex-col gap-6">
+                
+                {/* Step 1 */}
+                <div className="flex items-center gap-6 p-2">
+                    <div className="bg-blue-500 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center border-2 border-black flex-shrink-0 text-2xl shadow-md">1</div>
+                    <p className="text-lg font-bold ">
+                      A sedentary pet is one that doesn’t move much during the day.
+                    </p>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex items-center gap-6 p-2">
+                    <div className="bg-blue-500 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center border-2 border-black flex-shrink-0 text-2xl shadow-md">2</div>
+                    <p className="text-lg font-bold ">
+                      Pets in this category are neither lazy nor extremely energetic, example:<br />Dogs that go for daily walks and play moderately<br />Cats that spend time indoors but also run, jump, or climb occasionally. 
+                    </p>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex items-center gap-6 p-2">
+                    <div className="bg-blue-500 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center border-2 border-black flex-shrink-0 text-2xl shadow-md">3</div>
+                    <p className="text-lg font-bold ">
+                      Pets at the high active level are typically working or hunting pets.
+                    </p>
+                </div>
+
+                {/* Step 4 */}
+                <div className="flex items-center gap-6 p-2">
+                    <div className="bg-blue-500 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center border-2 border-black flex-shrink-0 text-2xl shadow-md">4</div>
+                    <p className="text-lg md:text-xl font-bold ">
+                      we use function RER (Resting Energy Requirement) to calculator.
+                    </p>
+                </div>
+
+            </div>
         </div>
       </div>
 
