@@ -17,7 +17,6 @@ interface PetProfile {
   picture: string;
   dob: string;
   type: string;
-  // Đã xóa trường size
 }
 
 const PetWeightTracker: React.FC = () => {

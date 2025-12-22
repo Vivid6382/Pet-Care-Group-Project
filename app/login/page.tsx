@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
-import BlueButton from '@/components/BlueButton'
+import BlueButton from '@/components/buttons/BlueButton'
 import { useRouter } from 'next/navigation'
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth'
 import { auth } from '../firebase'
