@@ -4,9 +4,8 @@ import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/app/firebase'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import CommonLink from './buttons/CommonLink'
 
-const SubMenu: string =
-  "block decoration-0 text-center items-center flex-1 p-3 text-black bg-white border-black border-4 border-solid rounded-full cursor-pointer text-1xl font-bold box-border transition-all duration-200 ease-in-out hover:bg-black hover:text-white"
 const AuthButton: string =
   "block decoration-0 px-10 py-3 text-center items-center text-black bg-white border-4 border-black border-solid rounded-full cursor-pointer text-1xl font-bold box-border transition-all duration-200 ease-in-out hover:bg-black hover:text-white"
 
@@ -60,10 +59,9 @@ const NavBar = () => {
         <li>
           <Link className="decoration-0 font-extrabold text-blue-500 text-5xl cursor-pointer" href="/">PetCare 🐾</Link>
         </li>
-        <li><Link className="commonbtn" href="/calculator">Pet feeding <br/>calculator 🍖</Link></li>
-        <li><Link className="commonbtn" href="/calendar">Pet events <br/>calendar 📅</Link></li>
-        <li><Link className="commonbtn" href="/tracker">Tracking pet <br/>health 📊</Link></li>
-        
+        <li><CommonLink href="/calculator">Pet feeding <br/>calculator 🍖</CommonLink></li>
+        <li><CommonLink href="/calendar">Pet events <br/>calendar 📅</CommonLink></li>
+        <li><CommonLink href="/tracker">Tracking pet <br/>health 📊</CommonLink></li>
         <li>
           <ul className="flex gap-4 justify-center">
             {loading ? (

@@ -3,7 +3,7 @@ import React from 'react'
 
 const Footer = () => {
   return (
-    <footer className="w-full py-8">
+    <footer className="w-full py-8 bg-white">
       <div className="max-w-7xl mx-auto px-6 flex justify-between">
         
         {/* Brand + contact */}

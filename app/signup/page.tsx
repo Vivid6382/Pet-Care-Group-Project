@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
-import BlueButton from '@/components/BlueButton'
+import BlueButton from '@/components/buttons/BlueButton'
 import { useRouter } from 'next/navigation'
 import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth'
 import { auth, db } from '../firebase'
@@ -82,8 +82,10 @@ export default function SignUp() {
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         username: trimmedUsername,
+        picture: null,
         email: trimmedEmail,
         createdAt: serverTimestamp(),
+        petid: ['']
       })
 
       // NOTE: removed reservation document in a separate 'usernames' collection.
