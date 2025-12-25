@@ -63,14 +63,7 @@ const NavBar = () => {
         <li><Link className="commonbtn" href="/calculator">Pet feeding <br/>calculator 🍖</Link></li>
         <li><Link className="commonbtn" href="/calendar">Pet events <br/>calendar 📅</Link></li>
         <li><Link className="commonbtn" href="/tracker">Tracking pet <br/>health 📊</Link></li>
-        <li className="group">
-          <Link className="commonbtn" href='#'>News ▼</Link>
-          <ul className="bg-white absolute z-50 hidden group-hover:block">
-            <li><Link className={SubMenu} href="/news/admin">Admin</Link></li>
-            <li><Link className={SubMenu} href="/news/user">User</Link></li>
-            <li><Link className={SubMenu} href="/news/favorite">Favorite</Link></li>
-          </ul>
-        </li>
+        
         <li>
           <ul className="flex gap-4 justify-center">
             {loading ? (
@@ -82,16 +75,27 @@ const NavBar = () => {
               </>
             ) : (
               <>
-                <li className={AuthButton}>
-                  <span className='block max-w-25 truncate'>
-                    {username ?? user.email}
-                  </span>
-                </li>
-                <li>
-                  <button onClick={handleLogout} className={AuthButton}>
-                    Log out
-                  </button>
-                </li>
+                <li className="group relative">
+  {/* Nút hiển thị tên User */}
+  <button className={AuthButton}>
+    {username ?? user.email} ▼
+  </button>
+  
+  {/* Menu con sổ xuống */}
+  <ul className="absolute left-1/2 -translate-x-1/2 top-full w-45 bg-white border-4 border-black rounded-xl hidden group-hover:block overflow-hidden shadow-lg">
+    <li className="hover:bg-black hover:text-white ">
+      <Link href="/profile" className="block p-3 font-bold text-center">
+        My Profile
+      </Link>
+    </li>
+    
+    <li className="border-t-2 border-gray-300 hover:bg-red-100">
+      <button onClick={handleLogout} className="block w-full p-3 font-bold text-red-500 text-center">
+        Log out
+      </button>
+    </li>
+  </ul>
+</li>
               </>
             )}
           </ul>
