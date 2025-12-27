@@ -58,7 +58,7 @@ const Home = () => {
 
         {/* bảng */}
         <div className="z-10 w-full max-w-6xl px-4 ">
-          <div className="bg-[#93C5FD] rounded-[40px] p-10 border-none shadow-xl flex flex-col md:flex-row items-center justify-between gap-10">
+          <div className="bg-blue-300 rounded-[40px] p-10 border-none shadow-xl flex flex-col md:flex-row items-center justify-between gap-10">
             
             {/* cột nhập liệu */}
             <div className="w-full md:w-1/3 space-y-4">
