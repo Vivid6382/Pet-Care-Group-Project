@@ -73,16 +73,27 @@ const NavBar = () => {
               </>
             ) : (
               <>
-                <li className={AuthButton}>
-                  <Link href="/profile" className='block max-w-25 truncate'>
-                    {username ?? user.email}
-                  </Link>
-                </li>
-                <li>
-                  <button onClick={handleLogout} className={AuthButton}>
-                    Log out
-                  </button>
-                </li>
+                <li className="group relative">
+  {/* Nút hiển thị tên User */}
+  <button className={AuthButton}>
+    {username ?? user.email} ▼
+  </button>
+  
+  {/* Menu con sổ xuống */}
+  <ul className="absolute left-1/2 -translate-x-1/2 top-full w-45 bg-white border-4 border-black rounded-xl hidden group-hover:block overflow-hidden shadow-lg">
+    <li className="hover:bg-black hover:text-white ">
+      <Link href="/profile" className="block p-3 font-bold text-center">
+        My Profile
+      </Link>
+    </li>
+    
+    <li className="border-t-2 border-gray-300 hover:bg-red-100">
+      <button onClick={handleLogout} className="block w-full p-3 font-bold text-red-500 text-center">
+        Log out
+      </button>
+    </li>
+  </ul>
+</li>
               </>
             )}
           </ul>
