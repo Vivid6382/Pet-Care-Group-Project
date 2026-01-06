@@ -2,7 +2,7 @@
 
 import Footer from '@/components/Footer'
 import NavBar from '@/components/NavBar'
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 const Home = () => {
   // khai báo biến
