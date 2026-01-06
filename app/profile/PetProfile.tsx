@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Pet } from './types'
 import { createPet, updatePet, removePetById } from './firebaseProfile'
 

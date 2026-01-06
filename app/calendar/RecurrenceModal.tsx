@@ -111,7 +111,7 @@ const RecurrenceModal: React.FC<Props> = ({ isOpen, onClose, onAddImmediately })
               <span>Never</span>
             </label>
 
-            {/* On date */}
+            {/* Ends On date */}
             <div className="flex items-center justify-between p-1 hover:bg-gray-50 rounded">
               <label className="flex items-center cursor-pointer">
                 <input
@@ -121,7 +121,7 @@ const RecurrenceModal: React.FC<Props> = ({ isOpen, onClose, onAddImmediately })
                   onChange={() => setConfig({ ...config, endType: "date" })}
                   className="mr-2"
                 />
-                <span>On date</span>
+                <span>Ends on date</span>
               </label>
               <input
                 type="date"
