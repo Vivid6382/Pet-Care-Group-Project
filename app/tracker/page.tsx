@@ -31,6 +31,7 @@ export default function PetHealthTracker() {
       { date: '2024-12-22', weight: 25.5, foodIntake: 1400, bcs: 6 },
     ],
   });
+  
 
   const [profiles] = useState([
     { id: 1, name: 'Max', species: 'Dog' },
@@ -132,7 +133,7 @@ export default function PetHealthTracker() {
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all shadow-md"
+                className="flex items-center gap-3 bg-gradient-to-r from-blue-300 to-blue-400 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-400 hover:to-blue-500 transition-all shadow-md"
               >
                 <span className="text-2xl">👤</span>
                 <div className="text-left">
@@ -168,7 +169,7 @@ export default function PetHealthTracker() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-6 mb-8">
+          <div className="bg-gradient-to-r from-blue-400 to-blue-300 rounded-xl p-6 mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Add Daily Entry</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
@@ -229,11 +230,50 @@ export default function PetHealthTracker() {
             </div>
             <button
               onClick={addEntry}
-              className="mt-4 bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
+              className="mt-4 bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
               <span className="text-xl">➕</span>
               Add Entry
             </button>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Entries</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Date</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Weight (kg)</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Food Intake (cal/day)</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">BCS</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.slice().reverse().map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                      <td className="px-4 py-3">{entry.date}</td>
+                      <td className="px-4 py-3">{entry.weight}</td>
+                      <td className="px-4 py-3">{entry.foodIntake}</td>
+                      <td className="px-4 py-3">
+                        {entry.bcs}
+                        <span className="ml-2 text-xs text-gray-500">
+                          ({entry.bcs <= 3 ? 'Underweight' : entry.bcs <= 5 ? 'Ideal' : entry.bcs <= 7 ? 'Overweight' : 'Obese'})
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => deleteEntry(entries.length - 1 - index)}
+                          className="text-red-500 hover:text-red-700 transition-colors text-xl"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="bg-gray-50 rounded-xl p-6 mb-6">
@@ -306,45 +346,7 @@ export default function PetHealthTracker() {
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Entries</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Weight (kg)</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Food Intake (cal/day)</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">BCS</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.slice().reverse().map((entry, index) => (
-                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
-                      <td className="px-4 py-3">{entry.date}</td>
-                      <td className="px-4 py-3">{entry.weight}</td>
-                      <td className="px-4 py-3">{entry.foodIntake}</td>
-                      <td className="px-4 py-3">
-                        {entry.bcs}
-                        <span className="ml-2 text-xs text-gray-500">
-                          ({entry.bcs <= 3 ? 'Underweight' : entry.bcs <= 5 ? 'Ideal' : entry.bcs <= 7 ? 'Overweight' : 'Obese'})
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => deleteEntry(entries.length - 1 - index)}
-                          className="text-red-500 hover:text-red-700 transition-colors text-xl"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>
