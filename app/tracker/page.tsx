@@ -1,215 +1,354 @@
-'use client';
-
+"use client";
+import Footer from '@/components/Footer'
+import NavBar from '@/components/NavBar'
 import React, { useState } from 'react';
-import NavBar from '@/components/NavBar';
-import Footer from '@/components/Footer';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// --- Định nghĩa kiểu dữ liệu ---
-type PetType = 'Dog' | 'Cat';
-type Gender = 'Male' | 'Female';
-type FoodType = 'Gà' | 'Bò' | 'Gạo';
-
-interface FormData {
-  petType: PetType;
-  gender: Gender;
-  weight: number | '';
-  foodType: FoodType;
-  age: number | '';
-  feedingAmount: number | ''; // gram/day
-  waterIntake: number | '';   // ml/day
-}
-
-
-const Tracker = () => {
-  // State quản lý form
-  const [formData, setFormData] = useState<FormData>({
-    petType: 'Dog',
-    weight: '',
-    gender: 'Male',
-    foodType: 'Gà',
-    age: '',
-    feedingAmount: '',
-    waterIntake: '',
+export default function PetHealthTracker() {
+  const [profileData, setProfileData] = useState<Record<number, Array<{date: string; weight: number; foodIntake: number; bcs: number}>>>({
+    1: [ // Max (Dog)
+      { date: '2024-12-16', weight: 12.5, foodIntake: 850, bcs: 5 },
+      { date: '2024-12-17', weight: 12.6, foodIntake: 920, bcs: 5 },
+      { date: '2024-12-18', weight: 12.5, foodIntake: 780, bcs: 5 },
+      { date: '2024-12-19', weight: 12.7, foodIntake: 950, bcs: 5 },
+      { date: '2024-12-20', weight: 12.6, foodIntake: 880, bcs: 5 },
+      { date: '2024-12-21', weight: 12.8, foodIntake: 900, bcs: 6 },
+      { date: '2024-12-22', weight: 12.7, foodIntake: 870, bcs: 5 },
+    ],
+    2: [ // Luna (Cat)
+      { date: '2024-12-15', weight: 4.2, foodIntake: 220, bcs: 4 },
+      { date: '2024-12-16', weight: 4.3, foodIntake: 235, bcs: 4 },
+      { date: '2024-12-17', weight: 4.3, foodIntake: 225, bcs: 4 },
+      { date: '2024-12-18', weight: 4.4, foodIntake: 250, bcs: 5 },
+      { date: '2024-12-19', weight: 4.4, foodIntake: 240, bcs: 5 },
+      { date: '2024-12-20', weight: 4.5, foodIntake: 260, bcs: 5 },
+    ],
+    3: [ // Charlie (Dog)
+      { date: '2024-12-18', weight: 25.3, foodIntake: 1500, bcs: 6 },
+      { date: '2024-12-19', weight: 25.5, foodIntake: 1450, bcs: 6 },
+      { date: '2024-12-20', weight: 25.4, foodIntake: 1480, bcs: 6 },
+      { date: '2024-12-21', weight: 25.6, foodIntake: 1420, bcs: 6 },
+      { date: '2024-12-22', weight: 25.5, foodIntake: 1400, bcs: 6 },
+    ],
   });
 
-  // State quản lý dữ liệu biểu đồ (Mặc định là rỗng hoặc dữ liệu mẫu)
-  const [chartData, setChartData] = useState<number[]>([5, 5, 5, 5, 5]);
-  const [bcsScore, setBcsScore] = useState<number | null>(null);
+  const [profiles] = useState([
+    { id: 1, name: 'Max', species: 'Dog' },
+    { id: 2, name: 'Luna', species: 'Cat' },
+    { id: 3, name: 'Charlie', species: 'Dog' },
+  ]);
+  
+  const [currentProfile, setCurrentProfile] = useState(profiles[0]);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showBCSGuide, setShowBCSGuide] = useState(false);
 
-  // Xử lý thay đổi input
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'age' || name === 'feedingAmount' || name === 'waterIntake' ? Number(value) : value
-    }));
+  const entries = profileData[currentProfile.id] || [];
+
+  const [newEntry, setNewEntry] = useState({
+    date: new Date().toISOString().split('T')[0],
+    weight: '',
+    foodIntake: '',
+    bcs: 5,
+  });
+
+  const addEntry = () => {
+    if (newEntry.date && newEntry.weight && newEntry.foodIntake) {
+      const updatedEntries = [...entries, { 
+        ...newEntry, 
+        weight: parseFloat(newEntry.weight),
+        foodIntake: parseFloat(newEntry.foodIntake)
+      }].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      setProfileData({
+        ...profileData,
+        [currentProfile.id]: updatedEntries
+      });
+      
+      setNewEntry({
+        date: new Date().toISOString().split('T')[0],
+        weight: '',
+        foodIntake: '',
+        bcs: 5,
+      });
+    }
   };
 
-  // Hàm tính toán BCS giả định
-  const handleCalculate = () => {
-    // Logic giả định: 
-    // BCS lý tưởng là 5/9. 
-    // Ăn quá nhiều (feeding) so với tiêu chuẩn sẽ tăng điểm (béo phì).
-    // Tuổi tác cũng ảnh hưởng nhẹ.
-    
-    let baseScore = 5; // Điểm chuẩn
-    
-    const feed = Number(formData.feedingAmount) || 0;
-    const water = Number(formData.waterIntake) || 0;
-    const age = Number(formData.age) || 1;
-
-    // Giả sử mức ăn chuẩn là 200g/ngày. Cứ dư 50g tăng 0.5 điểm BCS
-    const dietImpact = (feed - 200) / 50 * 0.5;
-    
-    // Nước uống tốt giúp điều hòa (giả định giảm nhẹ tác động xấu)
-    const hydrationFactor = water > 500 ? -0.2 : 0; 
-
-    let calculatedBCS = baseScore + dietImpact + hydrationFactor;
-
-    // Kẹp giá trị trong khoảng 1-9
-    calculatedBCS = Math.max(1, Math.min(9, calculatedBCS));
-
-    setBcsScore(Number(calculatedBCS.toFixed(1)));
-
-    // Tạo dữ liệu biểu đồ mô phỏng dự đoán trong 5 tháng tới
-    // Giả sử nếu không thay đổi chế độ ăn, BCS sẽ tịnh tiến theo hướng hiện tại
-    const trend = [];
-    for (let i = 0; i < 5; i++) {
-        // Biến động nhẹ ngẫu nhiên để biểu đồ trông tự nhiên hơn
-        let val = calculatedBCS + (i * 0.2 * (calculatedBCS > 5 ? 1 : -1));
-        val = Math.max(1, Math.min(9, val));
-        trend.push(val);
-    }
-    setChartData(trend);
+  const deleteEntry = (index: number) => {
+    const updatedEntries = entries.filter((_, i) => i !== index);
+    setProfileData({
+      ...profileData,
+      [currentProfile.id]: updatedEntries
+    });
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex flex-col font-sans">
-      <NavBar />
-
-      {/* Header Section */}
-      <div className="bg-blue-500 w-full py-8 text-center text-white">
-        <h1 className="text-4xl font-extrabold mb-2">Understand your pet’s wellness through data</h1>
-        <p className="text-xl opacity-90">Tracker your pet’s condition using charts and insights.</p>
+  <div>   
+    <NavBar />
+    <div>
+        <ul className='bluewrap'>
+          <li><h1 className='text-white text-center'>Understand your pet's  <br /> wellness through data</h1></li>
+        </ul>
       </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex justify-center items-center p-4 sm:p-10">
-        <div className="bg-blue-300 w-full max-w-6xl rounded-3xl p-6 sm:p-10 shadow-xl flex flex-col md:flex-row gap-8">
-          
-          {/* Left Side: Form */}
-          <div className="flex-1 space-y-4">
-            {/* Select Pet */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden">
-              <select 
-                name="petType" 
-                value={formData.petType}
-                onChange={handleChange}
-                className="w-full p-4 text-xl font-bold bg-white outline-none cursor-pointer hover:bg-gray-50 transition-colors"
+      
+    <div className="flex flex-col w-full h-full justify-center items-center bg-blue-100 bg-[url('/images/pawprints.png')] bg-cover bg-center bg-no-repeat bg-blend-overlay py-5 gap-5">
+      
+      <p className='block w-2/5 mx-auto font-bold text-4xl text-black bg-white border-black border-4 rounded-full p-3  text-center'>Tracking your pet's condition using charts and insights</p>
+      {showBCSGuide && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowBCSGuide(false)}>
+          <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Body Condition Score Guide</h2>
+              <button
+                onClick={() => setShowBCSGuide(false)}
+                className="text-gray-500 hover:text-gray-700 text-3xl font-bold"
               >
-                <option value="Dog">Chó (Dog)</option>
-                <option value="Cat">Mèo (Cat)</option>
-              </select>
+                ✕
+              </button>
             </div>
-
-            {/* Age */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden flex items-center px-4">
-              <label className="font-bold text-xl min-w-20">Age:</label>
-              <input 
-                type="number" 
-                name="age" 
-                placeholder="Ex: 2 (years)"
-                value={formData.age}
-                onChange={handleChange}
-                className="w-full p-4 text-xl font-medium outline-none"
+            <div className="p-6">
+              <img 
+                src={currentProfile.species === 'Cat' ? '/images/Cat_BCS.png' : '/images/Dog_BCS.png'}
+                alt={`${currentProfile.species} Body Condition Score Guide`}
+                className="w-full h-auto"
+                onError={(e) => {
+                  e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="%23f3f4f6"/><text x="400" y="200" text-anchor="middle" fill="%236b7280" font-size="20">Image not found</text></svg>';
+                }}
               />
             </div>
-
-            {/* Gender */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden">
-              <select 
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="w-full p-4 text-xl font-bold bg-white outline-none cursor-pointer"
+          </div>
+        </div>
+      )}
+      
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">🐾 Pet Health Tracker</h1>
+              <p className="text-gray-600">Monitor your pet's daily health metrics</p>
+            </div>
+            
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all shadow-md"
               >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+                <span className="text-2xl">👤</span>
+                <div className="text-left">
+                  <div className="text-sm opacity-90">Current Pet</div>
+                  <div className="font-bold">{currentProfile.name} ({currentProfile.species})</div>
+                </div>
+              </button>
+              
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-10">
+                  <div className="p-2">
+                    <div className="text-xs font-semibold text-gray-500 uppercase px-3 py-2">Switch Profile</div>
+                    {profiles.map((profile) => (
+                      <button
+                        key={profile.id}
+                        onClick={() => {
+                          setCurrentProfile(profile);
+                          setShowProfileMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+                          currentProfile.id === profile.id
+                            ? 'bg-purple-100 text-purple-700 font-semibold'
+                            : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium">{profile.name}</div>
+                        <div className="text-sm text-gray-500">{profile.species}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Food Type */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden">
-              <select 
-                name="foodType"
-                value={formData.foodType}
-                onChange={handleChange}
-                className="w-full p-4 text-xl font-bold bg-white outline-none cursor-pointer"
-              >
-                <option value="Gà">Gà (Chicken)</option>
-                <option value="Bò">Bò (Beef)</option>
-                <option value="Gạo">Gạo (Rice)</option>
-              </select>
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-6 mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Add Daily Entry</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-white text-sm font-semibold mb-2">Date</label>
+                <input
+                  type="date"
+                  value={newEntry.date}
+                  onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                />
+              </div>
+              <div>
+                <label className="block text-white text-sm font-semibold mb-2">Weight (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={newEntry.weight}
+                  onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
+                  placeholder="12.5"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                />
+              </div>
+              <div>
+                <label className="block text-white text-sm font-semibold mb-2">Food Intake (cal/day)</label>
+                <input
+                  type="number"
+                  step="1"
+                  value={newEntry.foodIntake}
+                  onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
+                  placeholder="850"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                />
+              </div>
+              <div>
+                <label className="block text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                  BCS (1-9)
+                  <button
+                    onClick={() => setShowBCSGuide(!showBCSGuide)}
+                    className="text-white hover:text-yellow-200 text-lg font-bold"
+                    type="button"
+                  >
+                    ❓
+                  </button>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="9"
+                  value={newEntry.bcs}
+                  onChange={(e) => setNewEntry({ ...newEntry, bcs: parseInt(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="text-white text-center font-bold text-lg">{newEntry.bcs}</div>
+                <div className="text-white/80 text-center text-xs">
+                  {newEntry.bcs <= 3 ? 'Underweight' : newEntry.bcs <= 5 ? 'Ideal' : newEntry.bcs <= 7 ? 'Overweight' : 'Obese'}
+                </div>
+              </div>
             </div>
-
-            {/* Feeding Amount */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden flex flex-col p-2">
-              <label className="font-bold text-lg px-2 text-gray-600">Feeding amount (g/day)</label>
-              <input 
-                type="number" 
-                name="feedingAmount" 
-                placeholder="Enter amount..."
-                value={formData.feedingAmount}
-                onChange={handleChange}
-                className="w-full p-2 text-xl font-bold outline-none"
-              />
-            </div>
-
-            {/* Water Intake */}
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden flex flex-col p-2">
-              <label className="font-bold text-lg px-2 text-gray-600">Water intake (ml/day)</label>
-              <input 
-                type="number" 
-                name="waterIntake" 
-                placeholder="Enter amount..."
-                value={formData.waterIntake}
-                onChange={handleChange}
-                className="w-full p-2 text-xl font-bold outline-none"
-              />
-            </div>
-
-            {/* Calculate Button */}
-            <button 
-              onClick={handleCalculate}
-              className="w-full bg-blue-600 text-white font-black text-2xl py-4 rounded-full border-4 border-black hover:bg-white hover:text-blue-600 transition-all shadow-lg active:translate-y-1 mt-4"
+            <button
+              onClick={addEntry}
+              className="mt-4 bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
-              CALCULATE ➤
+              <span className="text-xl">➕</span>
+              Add Entry
             </button>
           </div>
 
-          {/* Right Side: Chart Result */}
-          <div className="flex-1 bg-white rounded-2xl p-6 flex flex-col items-center justify-center min-h-[400px] border-4 border-white shadow-inner relative">
-            <h2 className="text-2xl font-bold mb-4 text-gray-700">Health Condition Chart (BCS)</h2>
+          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Health Trends</h2>
             
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Weight</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={entries}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
+                  <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
+                  <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* Result Text */}
-            {bcsScore !== null && (
-                <div className="mt-4 text-center animate-bounce">
-                    <p className="text-xl font-bold text-gray-500">Estimated Body Condition Score:</p>
-                    <p className={`text-5xl font-black ${bcsScore > 6 || bcsScore < 4 ? 'text-red-500' : 'text-green-500'}`}>
-                        {bcsScore} / 9
-                    </p>
-                    <p className="text-sm text-gray-400 mt-2">(5 is ideal)</p>
-                </div>
-            )}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Food Intake</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={entries}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft' }} />
+                  <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
+                  <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">Weight vs Food Intake</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={entries}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
+                  <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
+                  <Line yAxisId="right" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Entries</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Date</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Weight (kg)</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Food Intake (cal/day)</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">BCS</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.slice().reverse().map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                      <td className="px-4 py-3">{entry.date}</td>
+                      <td className="px-4 py-3">{entry.weight}</td>
+                      <td className="px-4 py-3">{entry.foodIntake}</td>
+                      <td className="px-4 py-3">
+                        {entry.bcs}
+                        <span className="ml-2 text-xs text-gray-500">
+                          ({entry.bcs <= 3 ? 'Underweight' : entry.bcs <= 5 ? 'Ideal' : entry.bcs <= 7 ? 'Overweight' : 'Obese'})
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => deleteEntry(entries.length - 1 - index)}
+                          className="text-red-500 hover:text-red-700 transition-colors text-xl"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-
-      <Footer />
     </div>
+    <Footer />
+   </div> 
   );
-};
-
-export default Tracker;
+}
