@@ -42,8 +42,15 @@ export default function PetHealthTracker() {
   const [currentProfile, setCurrentProfile] = useState(profiles[0]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showBCSGuide, setShowBCSGuide] = useState(false);
+  const [selectedChart, setSelectedChart] = useState('All');
+  const [searchDate, setSearchDate] = useState('');
 
   const entries = profileData[currentProfile.id] || [];
+
+  // Filter entries by search date
+  const filteredEntries = searchDate 
+    ? entries.filter(entry => entry.date === searchDate)
+    : entries;
 
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -169,181 +176,293 @@ export default function PetHealthTracker() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-400 to-blue-300 rounded-xl p-6 mb-8">
-            <h2 className="text-2xl font-bold text-white mb-4">Add Daily Entry</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-white text-sm font-semibold mb-2">Date</label>
-                <input
-                  type="date"
-                  value={newEntry.date}
-                  onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
-                />
-              </div>
-              <div>
-                <label className="block text-white text-sm font-semibold mb-2">Weight (kg)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={newEntry.weight}
-                  onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
-                  placeholder="12.5"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
-                />
-              </div>
-              <div>
-                <label className="block text-white text-sm font-semibold mb-2">Food Intake (cal/day)</label>
-                <input
-                  type="number"
-                  step="1"
-                  value={newEntry.foodIntake}
-                  onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
-                  placeholder="850"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
-                />
-              </div>
-              <div>
-                <label className="block text-white text-sm font-semibold mb-2 flex items-center gap-2">
-                  BCS (1-9)
-                  <button
-                    onClick={() => setShowBCSGuide(!showBCSGuide)}
-                    className="text-white hover:text-yellow-200 text-lg font-bold"
-                    type="button"
-                  >
-                    ❓
-                  </button>
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="9"
-                  value={newEntry.bcs}
-                  onChange={(e) => setNewEntry({ ...newEntry, bcs: parseInt(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="text-white text-center font-bold text-lg">{newEntry.bcs}</div>
-                <div className="text-white/80 text-center text-xs">
-                  {newEntry.bcs <= 3 ? 'Underweight' : newEntry.bcs <= 5 ? 'Ideal' : newEntry.bcs <= 7 ? 'Overweight' : 'Obese'}
+
+          {/* Side by Side Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8 lg:h-[600px] lg:w-[1000px]">
+
+          {/* Add Daily Entry - Left Side */}  
+          <div className="bg-gradient-to-r from-blue-400 to-blue-300 rounded-xl p-6 overflow-y-auto flex flex-col lg:col-span-2">
+              <h2 className="text-2xl font-bold text-white mb-6 flex-shrink-0">Add Daily Entry</h2>
+              <div className="space-y-4 flex-1">
+                <div>
+                  <label className="block text-white text-sm font-semibold mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={newEntry.date}
+                    onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white text-sm font-semibold mb-2">Weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={newEntry.weight}
+                    onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
+                    placeholder="12.5"
+                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white text-sm font-semibold mb-2">Food Intake (cal/day)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={newEntry.foodIntake}
+                    onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
+                    placeholder="850"
+                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                    BCS (1-9)
+                    <button
+                      onClick={() => setShowBCSGuide(!showBCSGuide)}
+                      className="text-white hover:text-yellow-200 text-lg font-bold"
+                      type="button"
+                      aria-label="Show BCS Guide"
+                    >
+                      ❓
+                    </button>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="9"
+                    value={newEntry.bcs}
+                    onChange={(e) => setNewEntry({ ...newEntry, bcs: parseInt(e.target.value) })}
+                    className="w-full mb-1"
+                  />
+                  <div className="text-white text-center font-bold text-lg">{newEntry.bcs}</div>
+                  <div className="text-white/80 text-center text-xs">
+                    {newEntry.bcs <= 3 ? 'Underweight' : newEntry.bcs <= 5 ? 'Ideal' : newEntry.bcs <= 7 ? 'Overweight' : 'Obese'}
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={addEntry}
+                className="mt-6 w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 flex-shrink-0"
+              >
+                <span className="text-xl">➕</span>
+                Add Entry
+              </button>
             </div>
-            <button
-              onClick={addEntry}
-              className="mt-4 bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
-            >
-              <span className="text-xl">➕</span>
-              Add Entry
-            </button>
+
+
+          {/* All Entries - Right Side */}
+          <div className="bg-gray-50 rounded-xl p-6 flex flex-col overflow-hidden lg:col-span-3">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <h2 className="text-2xl font-bold text-gray-800">All Entries</h2>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={searchDate}
+                    onChange={(e) => setSearchDate(e.target.value)}
+                    placeholder="Search by date"
+                    className="px-3 py-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-blue-400"
+                  />
+                  {searchDate && (
+                    <button
+                      onClick={() => setSearchDate('')}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {filteredEntries.length === 0 ? (
+                  <div className="text-center py-12">
+                    <span className="text-6xl mb-4 block">🐾</span>
+                    <p className="text-gray-600 text-lg mb-2">
+                      {searchDate 
+                        ? `No entries found for ${searchDate}`
+                        : `No entries yet for ${currentProfile.name}`
+                      }
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {searchDate 
+                        ? 'Try a different date or clear the search'
+                        : 'Add your first entry to start tracking!'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredEntries.slice().reverse().map((entry, index) => {
+                      const originalIndex = entries.length - 1 - entries.slice().reverse().indexOf(entry);
+                      return (
+                        <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-sm font-semibold text-gray-600">{entry.date}</span>
+                            <button
+                              onClick={() => deleteEntry(originalIndex)}
+                              className="text-red-500 hover:text-red-700 transition-colors text-lg"
+                              title="Delete entry"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Weight</div>
+                              <div className="font-bold text-gray-800">{entry.weight} kg</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Food Intake</div>
+                              <div className="font-bold text-gray-800">{entry.foodIntake} cal</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">BCS</div>
+                              <div className="font-bold text-gray-800">
+                                {entry.bcs}/9
+                                <span className="block text-xs font-normal text-gray-500">
+                                  {entry.bcs <= 3 ? 'Underweight' : entry.bcs <= 5 ? 'Ideal' : entry.bcs <= 7 ? 'Overweight' : 'Obese'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+
+          
+          {/* Health Trends Charts */}
           <div className="bg-gray-50 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Entries</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Weight (kg)</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Food Intake (cal/day)</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">BCS</th>
-                    <th className="px-4 py-3 text-left font-bold text-gray-700">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.slice().reverse().map((entry, index) => (
-                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
-                      <td className="px-4 py-3">{entry.date}</td>
-                      <td className="px-4 py-3">{entry.weight}</td>
-                      <td className="px-4 py-3">{entry.foodIntake}</td>
-                      <td className="px-4 py-3">
-                        {entry.bcs}
-                        <span className="ml-2 text-xs text-gray-500">
-                          ({entry.bcs <= 3 ? 'Underweight' : entry.bcs <= 5 ? 'Ideal' : entry.bcs <= 7 ? 'Overweight' : 'Obese'})
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => deleteEntry(entries.length - 1 - index)}
-                          className="text-red-500 hover:text-red-700 transition-colors text-xl"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Health Trends</h2>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedChart('BCS vs Weight')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    selectedChart === 'BCS vs Weight'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  BCS vs Weight
+                </button>
+                <button
+                  onClick={() => setSelectedChart('BCS vs Food Intake')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    selectedChart === 'BCS vs Food Intake'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  BCS vs Food Intake
+                </button>
+                <button
+                  onClick={() => setSelectedChart('Weight vs Food Intake')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    selectedChart === 'Weight vs Food Intake'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Weight vs Food Intake
+                </button>
+                <button
+                  onClick={() => setSelectedChart('All')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    selectedChart === 'All'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Health Trends</h2>
             
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Weight</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={entries}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
-                  <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
-                  <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {entries.length < 2 ? (
+              <div className="bg-gray-100 rounded-lg p-8 text-center">
+                <p className="text-gray-500">Add at least 2 entries to see health trends</p>
+              </div>
+            ) : (
+              <>
+                {(selectedChart === 'BCS vs Weight' || selectedChart === 'All') && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Weight</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={entries}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
+                        <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
 
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Food Intake</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={entries}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft' }} />
-                  <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
-                  <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                {(selectedChart === 'BCS vs Food Intake' || selectedChart === 'All') && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Food Intake</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={entries}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft' }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
+                        <Line yAxisId="right" type="monotone" dataKey="bcs" stroke="#10b981" strokeWidth={2} name="BCS" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
 
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Weight vs Food Intake</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={entries}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
-                  <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight' }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
-                  <Line yAxisId="right" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                {(selectedChart === 'Weight vs Food Intake' || selectedChart === 'All') && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Weight vs Food Intake</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={entries}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
+                        <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
+                        <Line yAxisId="right" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           
