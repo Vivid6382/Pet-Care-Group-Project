@@ -140,9 +140,9 @@ export default function PetHealthTracker() {
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-3 bg-gradient-to-r from-blue-300 to-blue-400 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-400 hover:to-blue-500 transition-all shadow-md"
+                className="flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-400 text-black px-6 py-3 rounded-lg font-semibold hover:from-blue-400 hover:to-blue-500 transition-all shadow-md"
               >
-                <span className="text-2xl">👤</span>
+                <span className="text-2xl"></span>
                 <div className="text-left">
                   <div className="text-sm opacity-90">Current Pet</div>
                   <div className="font-bold">{currentProfile.name} ({currentProfile.species})</div>
@@ -181,46 +181,46 @@ export default function PetHealthTracker() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8 lg:h-[600px] lg:w-[1000px]">
 
           {/* Add Daily Entry - Left Side */}  
-          <div className="bg-gradient-to-r from-blue-400 to-blue-300 rounded-xl p-6 overflow-y-auto flex flex-col lg:col-span-2">
-              <h2 className="text-2xl font-bold text-white mb-6 flex-shrink-0">Add Daily Entry</h2>
+          <div className="bg-gradient-to-r from-blue-300 to-blue-300 shadow-lg rounded-xl p-6 overflow-y-auto flex flex-col lg:col-span-2">
+              <h2 className="text-2xl font-bold text-black mb-6 flex-shrink-0">Add Daily Entry</h2>
               <div className="space-y-4 flex-1">
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-2">Date</label>
+                  <label className="block text-black text-sm font-semibold mb-2 ">Date</label>
                   <input
                     type="date"
                     value={newEntry.date}
                     onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white "
                   />
                 </div>
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-2">Weight (kg)</label>
+                  <label className="block text-black text-sm font-semibold mb-2">Weight (kg)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={newEntry.weight}
                     onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
                     placeholder="12.5"
-                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-2">Food Intake (cal/day)</label>
+                  <label className="block text-black text-sm font-semibold mb-2">Food Intake (cal/day)</label>
                   <input
                     type="number"
                     step="1"
                     value={newEntry.foodIntake}
                     onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
                     placeholder="850"
-                    className="w-full px-3 py-2 rounded-lg border-2 border-white/30 bg-white/20 text-white placeholder-white/70 focus:outline-none focus:border-white"
+                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                  <label className="block text-black text-sm font-semibold mb-2 flex items-center gap-2">
                     BCS (1-9)
                     <button
                       onClick={() => setShowBCSGuide(!showBCSGuide)}
-                      className="text-white hover:text-yellow-200 text-lg font-bold"
+                      className="text-white hover:text-yellow-200 text-lg font-bold cursor-pointer"
                       type="button"
                       aria-label="Show BCS Guide"
                     >
@@ -235,24 +235,25 @@ export default function PetHealthTracker() {
                     onChange={(e) => setNewEntry({ ...newEntry, bcs: parseInt(e.target.value) })}
                     className="w-full mb-1"
                   />
-                  <div className="text-white text-center font-bold text-lg">{newEntry.bcs}</div>
-                  <div className="text-white/80 text-center text-xs">
+                  <div className="text-black text-center font-bold text-lg">{newEntry.bcs}</div>
+                  <div className="text-black/80 text-center text-xs">
                     {newEntry.bcs <= 3 ? 'Underweight' : newEntry.bcs <= 5 ? 'Ideal' : newEntry.bcs <= 7 ? 'Overweight' : 'Obese'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={addEntry}
-                className="mt-6 w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 flex-shrink-0"
+                className="block mx-auto w-full font-bold text-2xl text-white bg-blue-500 rounded-full border-4 border-black p-3 text-center hover:bg-white hover:text-blue-500 transition-all duration-200"
+              
               >
-                <span className="text-xl">➕</span>
-                Add Entry
+                <span className="text-xl"></span>
+                + Add Entry
               </button>
             </div>
 
 
           {/* All Entries - Right Side */}
-          <div className="bg-gray-50 rounded-xl p-6 flex flex-col overflow-hidden lg:col-span-3">
+          <div className="bg-gray-50 shadow-lg rounded-xl p-6 flex flex-col overflow-hidden lg:col-span-3">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-800">All Entries</h2>
                 <div className="flex items-center gap-2">
@@ -300,7 +301,7 @@ export default function PetHealthTracker() {
                             <span className="text-sm font-semibold text-gray-600">{entry.date}</span>
                             <button
                               onClick={() => deleteEntry(originalIndex)}
-                              className="text-red-500 hover:text-red-700 transition-colors text-lg"
+                              className="text-red-500 hover:text-red-700 transition-colors text-lg cursor-pointer"
                               title="Delete entry"
                             >
                               🗑️
@@ -336,7 +337,7 @@ export default function PetHealthTracker() {
 
           
           {/* Health Trends Charts */}
-          <div className="bg-gray-50 rounded-xl p-6">
+          <div className="bg-gray-50 shadow-lgend rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Health Trends</h2>
               
@@ -403,8 +404,8 @@ export default function PetHealthTracker() {
                           textAnchor="end"
                           height={80}
                         />
-                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
                         <Tooltip />
                         <Legend />
                         <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
@@ -427,8 +428,8 @@ export default function PetHealthTracker() {
                           textAnchor="end"
                           height={80}
                         />
-                        <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight' }} />
+                        <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
                         <Tooltip />
                         <Legend />
                         <Line yAxisId="left" type="monotone" dataKey="foodIntake" stroke="#3b82f6" strokeWidth={2} name="Food Intake (cal/day)" />
@@ -451,8 +452,8 @@ export default function PetHealthTracker() {
                           textAnchor="end"
                           height={80}
                         />
-                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight' }} />
+                        <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
+                        <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
                         <Tooltip />
                         <Legend />
                         <Line yAxisId="left" type="monotone" dataKey="weight" stroke="#8b5cf6" strokeWidth={2} name="Weight (kg)" />
