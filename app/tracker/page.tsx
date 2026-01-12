@@ -44,6 +44,7 @@ export default function PetHealthTracker() {
   const [showBCSGuide, setShowBCSGuide] = useState(false);
   const [selectedChart, setSelectedChart] = useState('All');
   const [searchDate, setSearchDate] = useState('');
+  const [dateRange, setDateRange] = useState('30days'); // NEW: Date range filter for charts
 
   const entries = profileData[currentProfile.id] || [];
 
@@ -51,6 +52,35 @@ export default function PetHealthTracker() {
   const filteredEntries = searchDate 
     ? entries.filter(entry => entry.date === searchDate)
     : entries;
+  
+  // NEW: Filter entries for charts based on date range
+  const getChartData = () => {
+    const now = new Date();
+    let cutoffDate = new Date();
+    
+    switch(dateRange) {
+      case '7days':
+        cutoffDate.setDate(now.getDate() - 7);
+        break;
+      case '30days':
+        cutoffDate.setDate(now.getDate() - 30);
+        break;
+      case '90days':
+        cutoffDate.setDate(now.getDate() - 90);
+        break;
+      case '1year':
+        cutoffDate.setFullYear(now.getFullYear() - 1);
+        break;
+      case 'all':
+        return entries;
+      default:
+        cutoffDate.setDate(now.getDate() - 30);
+    }
+    
+    return entries.filter(entry => new Date(entry.date) >= cutoffDate);
+  };
+
+ 
 
   const [newEntry, setNewEntry] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -336,58 +366,78 @@ export default function PetHealthTracker() {
           </div>
 
           
-          {/* Health Trends Charts */}
-          <div className="bg-gray-50 shadow-lgend rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-gray-50 shadow-lg rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-800">Health Trends</h2>
               
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedChart('BCS vs Weight')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    selectedChart === 'BCS vs Weight'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-200'
-                  }`}
+              {/* NEW: Date Range Filter */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-gray-600">Time Period:</span>
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="px-3 py-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-semibold focus:outline-none focus:border-blue-400"
                 >
-                  BCS vs Weight
-                </button>
-                <button
-                  onClick={() => setSelectedChart('BCS vs Food Intake')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    selectedChart === 'BCS vs Food Intake'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  BCS vs Food Intake
-                </button>
-                <button
-                  onClick={() => setSelectedChart('Weight vs Food Intake')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    selectedChart === 'Weight vs Food Intake'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Weight vs Food Intake
-                </button>
-                <button
-                  onClick={() => setSelectedChart('All')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    selectedChart === 'All'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  All
-                </button>
+                  <option value="7days">Last 7 Days</option>
+                  <option value="30days">Last 30 Days</option>
+                  <option value="90days">Last 90 Days</option>
+                  <option value="1year">Last Year</option>
+                  <option value="all">All Time</option>
+                </select>
               </div>
             </div>
+
+            <div className="flex gap-2 mb-6">
+              <button
+                onClick={() => setSelectedChart('BCS vs Weight')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  selectedChart === 'BCS vs Weight'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                BCS vs Weight
+              </button>
+              <button
+                onClick={() => setSelectedChart('BCS vs Food Intake')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  selectedChart === 'BCS vs Food Intake'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                BCS vs Food Intake
+              </button>
+              <button
+                onClick={() => setSelectedChart('Weight vs Food Intake')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  selectedChart === 'Weight vs Food Intake'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Weight vs Food Intake
+              </button>
+              <button
+                onClick={() => setSelectedChart('All')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  selectedChart === 'All'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+            </div>
+
+            {/* NEW: Show chart data count */}
+            <div className="mb-4 text-sm text-gray-600">
+              Showing <span className="font-semibold">{getChartData().length}</span> of <span className="font-semibold">{entries.length}</span> total entries
+            </div>
             
-            {entries.length < 2 ? (
+            {getChartData().length < 2 ? (
               <div className="bg-gray-100 rounded-lg p-8 text-center">
-                <p className="text-gray-500">Add at least 2 entries to see health trends</p>
+                <p className="text-gray-500">Add at least 2 entries in the selected time period to see health trends</p>
               </div>
             ) : (
               <>
@@ -395,7 +445,7 @@ export default function PetHealthTracker() {
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Weight</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={entries}>
+                      <LineChart data={getChartData()}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="date" 
@@ -419,7 +469,7 @@ export default function PetHealthTracker() {
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">BCS vs Food Intake</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={entries}>
+                      <LineChart data={getChartData()}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="date" 
@@ -443,7 +493,7 @@ export default function PetHealthTracker() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Weight vs Food Intake</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={entries}>
+                      <LineChart data={getChartData()}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="date" 
@@ -465,6 +515,9 @@ export default function PetHealthTracker() {
               </>
             )}
           </div>
+
+        
+
 
           
         </div>
