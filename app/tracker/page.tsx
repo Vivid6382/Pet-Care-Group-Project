@@ -220,7 +220,7 @@ export default function PetHealthTracker() {
                     type="date"
                     value={newEntry.date}
                     onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white "
+                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none cursor-pointer"
                   />
                 </div>
                 <div>
@@ -231,7 +231,7 @@ export default function PetHealthTracker() {
                     value={newEntry.weight}
                     onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
                     placeholder="12.5"
-                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white"
+                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none cursor-pointer"
                   />
                 </div>
                 <div>
@@ -242,7 +242,7 @@ export default function PetHealthTracker() {
                     value={newEntry.foodIntake}
                     onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
                     placeholder="850"
-                    className="w-full px-3 py-2 rounded-lg border-2 border-black/50 bg-white/20 text-black placeholder-black/70 focus:outline-none focus:border-white"
+                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none cursor-pointer"
                   />
                 </div>
                 <div>
