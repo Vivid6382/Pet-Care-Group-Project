@@ -366,6 +366,7 @@ export default function PetHealthTracker() {
           </div>
 
           
+          {/* Health Trends Charts */}
           <div className="bg-gray-50 shadow-lg rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-800">Health Trends</h2>
@@ -453,6 +454,7 @@ export default function PetHealthTracker() {
                           angle={-45}
                           textAnchor="end"
                           height={80}
+                          interval={Math.floor(getChartData().length / 10)}
                         />
                         <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
                         <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
@@ -477,6 +479,7 @@ export default function PetHealthTracker() {
                           angle={-45}
                           textAnchor="end"
                           height={80}
+                          interval={Math.floor(getChartData().length / 10)}
                         />
                         <YAxis yAxisId="left" label={{ value: `Food Intake (cal/day)`, angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
                         <YAxis yAxisId="right" orientation="right" domain={[1, 9]} ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9]} label={{ value: 'BCS', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
@@ -501,6 +504,7 @@ export default function PetHealthTracker() {
                           angle={-45}
                           textAnchor="end"
                           height={80}
+                          interval={Math.floor(getChartData().length / 10)}
                         />
                         <YAxis yAxisId="left" label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
                         <YAxis yAxisId="right" orientation="right" label={{ value: `Food Intake (cal/day)`, angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }} />
