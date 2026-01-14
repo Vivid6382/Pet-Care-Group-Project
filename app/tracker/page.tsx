@@ -170,7 +170,7 @@ export default function PetHealthTracker() {
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-400 text-black px-6 py-3 rounded-lg font-semibold hover:from-blue-400 hover:to-blue-500 transition-all shadow-md"
+                className="flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-400 text-black border-2 border-black px-6 py-3 rounded-lg font-semibold hover:from-blue-100 hover:to-blue-100 transition-all shadow-md"
               >
                 <span className="text-2xl"></span>
                 <div className="text-left">
@@ -180,7 +180,7 @@ export default function PetHealthTracker() {
               </button>
               
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border-2 border-gray-200 z-10">
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border-[3px] border-black z-10">
                   <div className="p-2">
                     <div className="text-xs font-semibold text-gray-500 uppercase px-3 py-2">Switch Profile</div>
                     {profiles.map((profile) => (
@@ -192,8 +192,8 @@ export default function PetHealthTracker() {
                         }}
                         className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
                           currentProfile.id === profile.id
-                            ? 'bg-purple-100 text-purple-700 font-semibold'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            ? 'bg-blue-400 text-white border-[3px] border-black font-semibold'
+                            : 'hover:bg-gray-200 text-gray-700'
                         }`}
                       >
                         <div className="font-medium">{profile.name}</div>
@@ -231,7 +231,7 @@ export default function PetHealthTracker() {
                     value={newEntry.weight}
                     onChange={(e) => setNewEntry({ ...newEntry, weight: e.target.value })}
                     placeholder="12.5"
-                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none cursor-pointer"
+                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none "
                   />
                 </div>
                 <div>
@@ -242,7 +242,7 @@ export default function PetHealthTracker() {
                     value={newEntry.foodIntake}
                     onChange={(e) => setNewEntry({ ...newEntry, foodIntake: e.target.value })}
                     placeholder="850"
-                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none cursor-pointer"
+                    className="w-full p-4 text-lg md:text-xl font-bold text-gray-700 bg-white border-[3px] border-black focus:outline-none appearance-none "
                   />
                 </div>
                 <div>
