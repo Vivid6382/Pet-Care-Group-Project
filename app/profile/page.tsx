@@ -50,6 +50,11 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-blue-100">
       <NavBar />
+      <div>
+        <ul className='bluewrap'>
+          <li><h1 className='text-white text-center'>Your profile page!!</h1></li>
+        </ul>
+      </div>
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         <UserProfile user={user} userData={userData} refresh={refresh} />
         <PetProfile user={user} pets={pets} refresh={refresh} />
