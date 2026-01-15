@@ -1,6 +1,7 @@
 "use client";
 import Footer from '@/components/Footer'
 import NavBar from '@/components/NavBar'
+import Link from 'next/link'; // Added for the redirect link
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { auth, db } from '../firebase'; 
@@ -19,8 +20,8 @@ export default function PetHealthTracker() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [profiles, setProfiles] = useState<Array<{id: string; name: string; species: string}>>([]);
-  const [currentProfile, setCurrentProfile] = useState<{id: string; name: string; species: string} | null>(null);
+  const [profiles, setProfiles] = useState<Array<{id: string; name: string; type: string}>>([]);
+  const [currentProfile, setCurrentProfile] = useState<{id: string; name: string; type: string} | null>(null);
   const [entries, setEntries] = useState<Array<{id: string; date: string; weight: number; foodIntake: number; bcs: number}>>([]);
   
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -36,7 +37,6 @@ export default function PetHealthTracker() {
     bcs: 5,
   });
 
-  // 1. Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -45,7 +45,7 @@ export default function PetHealthTracker() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Load Profiles from Firestore
+  // Updated to match your Firestore fields: "name" and "type"
   useEffect(() => {
     if (!user) {
       setProfiles([]);
@@ -58,7 +58,7 @@ export default function PetHealthTracker() {
       const loadedProfiles = snapshot.docs.map(doc => ({
         id: doc.id,
         name: doc.data().name,
-        species: doc.data().species || doc.data().type 
+        type: doc.data().type // Matches your "type": "dog" field
       }));
       setProfiles(loadedProfiles);
       
@@ -70,7 +70,6 @@ export default function PetHealthTracker() {
     return () => unsubscribe();
   }, [user]);
 
-  // 3. Load Entries for selected pet
   useEffect(() => {
     if (!user || !currentProfile) {
       setEntries([]);
@@ -90,8 +89,6 @@ export default function PetHealthTracker() {
 
     return () => unsubscribe();
   }, [user, currentProfile]);
-
-  // --- Actions ---
 
   const addEntry = async () => {
     if (!user || !currentProfile) return;
@@ -169,7 +166,8 @@ export default function PetHealthTracker() {
               <button onClick={() => setShowBCSGuide(false)} className="text-gray-500 hover:text-gray-700 text-3xl font-bold">✕</button>
             </div>
             <div className="p-6">
-              <img src={currentProfile.species === 'Cat' ? '/images/Cat_BCS.png' : '/images/Dog_BCS.png'} alt="BCS Guide" className="w-full h-auto" />
+              {/* Added toLowerCase() check for your "dog" string */}
+              <img src={currentProfile.type?.toLowerCase() === 'cat' ? '/images/Cat_BCS.png' : '/images/Dog_BCS.png'} alt="BCS Guide" className="w-full h-auto" />
             </div>
           </div>
         </div>
@@ -187,7 +185,7 @@ export default function PetHealthTracker() {
               {currentProfile && (
                 <div className="relative">
                   <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-400 text-black border-2 border-black px-6 py-3 rounded-lg font-semibold shadow-md">
-                    <span className="text-2xl">{currentProfile.species === 'Dog' ? '🐕' : '🐈'}</span>
+                    <span className="text-2xl">{currentProfile.type?.toLowerCase() === 'dog' ? '🐕' : '🐈'}</span>
                     <div className="text-left">
                       <div className="text-sm opacity-90">Current Pet</div>
                       <div className="font-bold">{currentProfile.name}</div>
@@ -199,7 +197,7 @@ export default function PetHealthTracker() {
                         {profiles.map((p) => (
                           <div key={p.id} className="flex items-center gap-2">
                             <button onClick={() => { setCurrentProfile(p); setShowProfileMenu(false); }} className={`flex-1 text-left px-4 py-3 rounded-md ${currentProfile.id === p.id ? 'bg-blue-400 text-white font-semibold' : 'hover:bg-gray-200'}`}>
-                              {p.name} ({p.species})
+                              {p.name} ({p.type})
                             </button>
                           </div>
                         ))}
@@ -212,9 +210,11 @@ export default function PetHealthTracker() {
           </div>
 
           {!currentProfile ? (
-            <div className="text-center py-12 bg-gray-50 rounded-xl">
-               <p className="text-gray-600 text-lg mb-2">No pets found</p>
-               <p className="text-sm text-gray-400">Please add a pet in your <span className="font-bold text-blue-500">Profile page</span> to start tracking.</p>
+            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+               <p className="text-gray-600 text-lg mb-4">No pets found in your account.</p>
+               <Link href="/profile" className="inline-block bg-blue-500 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-600 transition-colors">
+                 Go to Profile to Add a Pet
+               </Link>
             </div>
           ) : (
             <>
