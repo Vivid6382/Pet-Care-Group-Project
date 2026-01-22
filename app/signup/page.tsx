@@ -29,7 +29,7 @@ export default function SignUp() {
 
   const [
     createUserWithEmailAndPassword,
-    userCredential,
+    userCredentialFromHook,
     loading,
     authError,
   ] = useCreateUserWithEmailAndPassword(auth)
@@ -68,24 +68,26 @@ export default function SignUp() {
         return
       }
 
-      // Create user 
-      const userCredential = await createUserWithEmailAndPassword(
+      // Create user (auth)
+      const createdUserCredential = await createUserWithEmailAndPassword(
         trimmedEmail,
         password
       )
 
-      if (!userCredential?.user) return
+      if (!createdUserCredential?.user) return
 
-      const user = userCredential.user
+      const user = createdUserCredential.user
 
       // Save user document (single source of truth)
+      // DEFAULT: admin set to false for every new user
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         username: trimmedUsername,
         picture: null,
         email: trimmedEmail,
         createdAt: serverTimestamp(),
-        petid: ['']
+        petid: [''],
+        admin: false,
       })
 
       // NOTE: removed reservation document in a separate 'usernames' collection.

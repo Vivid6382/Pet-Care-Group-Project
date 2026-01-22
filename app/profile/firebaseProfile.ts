@@ -6,7 +6,10 @@ import {
   collection,
   getDocs,
   deleteDoc,
-  runTransaction,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
   Timestamp,
 } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
@@ -27,29 +30,36 @@ export const updateUserProfile = async (
   await updateDoc(doc(db, 'users', uid), data)
 }
 
+/**
+ * Get pets ordered by createdAt.
+ * Each returned pet includes the auto-generated doc id as `id`.
+ */
 export const getPets = async (uid: string): Promise<Pet[]> => {
-  const snaps = await getDocs(collection(db, 'users', uid, 'pets'))
-  const list = snaps.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
-  return list.sort((a, b) => Number(a.id) - Number(b.id))
+  const q = query(
+    collection(db, 'users', uid, 'pets'),
+    orderBy('createdAt', 'asc')
+  )
+  const snaps = await getDocs(q)
+  return snaps.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
 }
 
+/**
+ * Create a pet using Firestore auto-generated document ID.
+ * Returns the new doc id.
+ */
 export const createPet = async (
   uid: string,
   pet: { name: string; picture?: string; type: string; birthDate: string }
 ) => {
-  await runTransaction(db, async (t) => {
-    const userRef = doc(db, 'users', uid)
-    const snap = await t.get(userRef)
-    const next = ((snap.data() as any)?.petCounter || 0) + 1
-
-    t.update(userRef, { petCounter: next })
-    t.set(doc(db, 'users', uid, 'pets', String(next)), {
-      name: pet.name,
-      picture: pet.picture || null,
-      type: pet.type,
-      birthDate: Timestamp.fromDate(new Date(pet.birthDate)),
-    })
+  const docRef = await addDoc(collection(db, 'users', uid, 'pets'), {
+    name: pet.name,
+    picture: pet.picture || null,
+    type: pet.type,
+    birthDate: Timestamp.fromDate(new Date(pet.birthDate)),
+    createdAt: serverTimestamp(),
   })
+
+  return docRef.id
 }
 
 export const updatePet = async (
@@ -60,6 +70,7 @@ export const updatePet = async (
   await updateDoc(doc(db, 'users', uid, 'pets', id), {
     ...pet,
     birthDate: Timestamp.fromDate(new Date(pet.birthDate)),
+    updatedAt: serverTimestamp(),
   })
 }
 

@@ -12,25 +12,34 @@ const AuthButton: string =
 const NavBar = () => {
   const [user, setUser] = useState<User | null>(null)
   const [username, setUsername] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // 🔎 Fetch username from Firestore users collection
-  const fetchUsername = async (uid: string) => {
-    try {
-      const userDocRef = doc(db, 'users', uid)
-      const userSnap = await getDoc(userDocRef)
+const fetchUserData = async (uid: string) => {
+  try {
+    const userDocRef = doc(db, 'users', uid)
+    const userSnap = await getDoc(userDocRef)
 
-      if (userSnap.exists()) {
-        const data = userSnap.data() as { username?: string }
-        setUsername(data.username ?? null)
-      } else {
-        setUsername(null)
+    if (userSnap.exists()) {
+      const data = userSnap.data() as {
+        username?: string
+        admin?: boolean
       }
-    } catch (error) {
-      console.error('Error fetching username:', error)
+
+      setUsername(data.username ?? null)
+      setIsAdmin(Boolean(data.admin))
+    } else {
       setUsername(null)
+      setIsAdmin(false)
     }
+  } catch (error) {
+    console.error('Error fetching user data:', error)
+    setUsername(null)
+    setIsAdmin(false)
   }
+}
+
 
   // 🔐 Combined and simplified Auth listener
   useEffect(() => {
@@ -39,9 +48,10 @@ const NavBar = () => {
       setLoading(false)
 
       if (currentUser) {
-        await fetchUsername(currentUser.uid)
+        await fetchUserData(currentUser.uid)
       } else {
         setUsername(null)
+        setIsAdmin(false)
       }
     })
 
@@ -81,17 +91,29 @@ const NavBar = () => {
                   
                   {/* Menu con sổ xuống */}
                   <ul className="absolute left-1/2 -translate-x-1/2 top-full w-45 bg-white border-4 border-black rounded-xl hidden group-hover:block overflow-hidden shadow-lg">
-                    <li className="hover:bg-black hover:text-white ">
+                    <li className="hover:bg-black hover:text-white">
                       <Link href="/profile" className="block p-3 font-bold text-center">
                         My Profile
                       </Link>
                     </li>
-                    
+
+                    {isAdmin && (
+                      <li className="border-t-2 border-gray-300 hover:bg-black hover:text-white">
+                        <Link href="/admin" className="block p-3 font-bold text-center">
+                          Admin Dashboard
+                        </Link>
+                      </li>
+                    )}
+
                     <li className="border-t-2 border-gray-300 hover:bg-red-100">
-                      <button onClick={handleLogout} className="block w-full p-3 font-bold text-red-500 text-center">
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full p-3 font-bold text-red-500 text-center"
+                      >
                         Log out
                       </button>
                     </li>
+
                   </ul>
                 </li>
               </>
