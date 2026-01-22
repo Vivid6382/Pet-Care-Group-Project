@@ -86,7 +86,6 @@ export default function SignUp() {
         picture: null,
         email: trimmedEmail,
         createdAt: serverTimestamp(),
-        petid: [''],
         admin: false,
       })
 
