@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react';
-import { auth, db } from '../firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { auth, db, functions  } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import {
@@ -165,19 +166,43 @@ export default function AdminPage() {
     }
     setLoadingFeedback(false);
   };
+  // inside your component (can place near top with other helpers)
+  const callDeleteUserAuth = async (targetUid: string) => {
+    const fn = httpsCallable(functions, 'deleteUser');
+    // callable returns { data: ... }
+    const res = await fn({ uid: targetUid });
+    return res.data;
+  };
   const deleteItem = async (path: string) => {
     if (!confirm('Delete this item and all sub-data?')) return;
     try {
-      await deleteDoc(docFromPath(path));
       const parts = path.split('/').filter(Boolean);
+
       if (parts[0] === 'feedback') {
+        // feedback delete unchanged
+        await deleteDoc(docFromPath(path));
         setFeedback(prev => prev.filter(f => f.id !== parts[1]));
-      } else if (parts[0] === 'users') {
+        return;
+      }
+
+      if (parts[0] === 'users') {
         if (parts.length === 2) {
-          // delete user
+          // delete user: first remove from Auth via callable function (server-side)
+          try {
+            await callDeleteUserAuth(parts[1]);
+          } catch (err: any) {
+            // show error and stop - caller may not be admin or function failed
+            alert('Failed to remove user from Authentication: ' + (err?.message ?? err));
+            return;
+          }
+
+          // optional: remove Firestore document (client-side)
+          await deleteDoc(docFromPath(path));
           setUsers(prev => prev.filter(u => u.id !== parts[1]));
+          return;
         } else if (parts.length === 4 && parts[2] === 'pets') {
           // delete pet
+          await deleteDoc(docFromPath(path));
           setUsers(prev => {
             return prev.map(u => {
               if (u.id === parts[1]) {
@@ -186,8 +211,10 @@ export default function AdminPage() {
               return u;
             });
           });
+          return;
         } else if (parts.length === 4 && parts[2] === 'events') {
           // delete event
+          await deleteDoc(docFromPath(path));
           setUsers(prev => {
             return prev.map(u => {
               if (u.id === parts[1]) {
@@ -196,12 +223,17 @@ export default function AdminPage() {
               return u;
             });
           });
+          return;
         }
       }
+
+      // fallback: delete generic path
+      await deleteDoc(docFromPath(path));
     } catch (error: any) {
       alert('Error: ' + error.message);
     }
   };
+
   // NEW: toggle expand/collapse for users
   const toggleExpandUser = (userId: string) => {
     setExpandedUsers(prev => {
