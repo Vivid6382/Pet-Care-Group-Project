@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react';
+
+import React, { useState, useEffect, useMemo, ChangeEvent } from 'react';
 import { auth, db } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth'
-import { useRouter } from 'next/navigation'
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import {
   collection,
   getDocs,
@@ -11,484 +12,494 @@ import {
   updateDoc,
   Timestamp,
   getDoc,
-  getCountFromServer
+  getCountFromServer,
+  DocumentData
 } from 'firebase/firestore';
+
 // --- Interfaces ---
-interface Entry {
+interface Entry extends DocumentData {
   id: string;
-  [key: string]: any;
 }
-interface Pet {
+
+interface Pet extends DocumentData {
   id: string;
+  name?: string;
   entries?: Entry[];
   entryCount?: number;
-  [key: string]: any;
 }
-interface EventDoc {
+
+interface EventDoc extends DocumentData {
   id: string;
-  [key: string]: any;
+  title?: string;
 }
-interface User {
+
+interface UserProfile extends DocumentData {
   id: string;
+  email?: string;
+  displayName?: string;
+  name?: string;
+  admin?: boolean;
   pets?: Pet[];
   events?: EventDoc[];
-  [key: string]: any;
 }
-interface Feedback {
+
+interface Feedback extends DocumentData {
   id: string;
-  [key: string]: any;
 }
+
 type TabType = 'manage-users' | 'feedback';
+type SearchField = 'any' | 'id' | 'email' | 'displayName';
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('manage-users');
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
+  
+  // UI Expansion States
   const [expandedUsers, setExpandedUsers] = useState<Record<string, boolean>>({});
-  // used for per-pet collapse state
   const [expandedPets, setExpandedPets] = useState<Record<string, boolean>>({});
-  // per-event collapse state
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
+  
+  // Loading States
   const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
   const [loadingFeedback, setLoadingFeedback] = useState<boolean>(false);
-  const router = useRouter()
-  const [checkingAuth, setCheckingAuth] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  // SEARCH STATE (NEW)
+  const [loadingUserSubdata, setLoadingUserSubdata] = useState<Record<string, boolean>>({});
+  const [loadingPetEntries, setLoadingPetEntries] = useState<Record<string, boolean>>({});
+  
+  const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // --- GENERALIZED EDITING STATE ---
+  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  const [editJsonValue, setEditJsonValue] = useState<Record<string, string>>({});
+  
+  // Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchField, setSearchField] = useState<'any' | 'id' | 'email' | 'displayName'>('any');
+  const [searchField, setSearchField] = useState<SearchField>('any');
 
+  // --- Auth Check ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.replace('/')
-        return
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser: FirebaseUser | null) => {
+      if (!currentUser) { 
+        router.replace('/'); 
+        return; 
       }
       try {
-        const userRef = doc(db, 'users', currentUser.uid)
-        const userSnap = await getDoc(userRef)
-        if (!userSnap.exists() || userSnap.data().admin !== true) {
-          router.replace('/')
-          return
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists() || (userSnap.data() as UserProfile).admin !== true) {
+          router.replace('/'); 
+          return;
         }
-        setIsAdmin(true)
-      } catch (err) {
-        console.error('Admin check failed', err)
-        router.replace('/')
-      } finally {
-        setCheckingAuth(false)
+        setIsAdmin(true);
+      } catch (err) { 
+        router.replace('/'); 
+      } finally { 
+        setCheckingAuth(false); 
       }
-    })
-    return () => unsubscribe()
-  }, [router])
+    });
+    return () => unsubscribe();
+  }, [router]);
+
   useEffect(() => {
     if (isAdmin) {
-      if (activeTab === 'feedback') {
-        fetchFeedback();
-      } else {
-        fetchUsers();
-      }
+      activeTab === 'feedback' ? fetchFeedback() : fetchUsers();
     }
   }, [isAdmin, activeTab]);
-  // --- Helpers ---
+
+  // --- Formatting Helpers ---
   const formatDisplayValue = (value: any): string => {
     if (value instanceof Timestamp) return value.toDate().toLocaleString();
     if (value && typeof value === 'object' && 'seconds' in value) return new Date(value.seconds * 1000).toLocaleString();
-    if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
+    if (Array.isArray(value)) return `Array(${value.length})`;
+    if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+    return String(value ?? '');
   };
+
   const docFromPath = (path: string) => {
-    // path like "users/uid/pets/petId" -> doc(db, 'users', 'uid', 'pets', 'petId')
     const parts = path.split('/').filter(Boolean);
-    return doc(db, ...(parts as [string, ...string[]]));
+    return doc(db, parts[0], ...parts.slice(1));
   };
-  // --- Actions ---
+
+  // --- Fetching Logic ---
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
       const usersCol = collection(db, 'users');
       const usersSnapshot = await getDocs(usersCol);
-      const usersList: User[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setUsers(usersList);
-    } catch (error: any) {
-      alert('Error fetching users: ' + error.message);
+      const userData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+      setUsers(userData);
+    } catch (error: any) { 
+      alert('Error fetching users: ' + error.message); 
+    } finally { 
+      setLoadingUsers(false); 
     }
-    setLoadingUsers(false);
   };
+
   const loadUserData = async (userId: string) => {
     try {
-      const userIndex = users.findIndex(u => u.id === userId);
-      if (userIndex === -1) return;
       const petsCol = collection(db, `users/${userId}/pets`);
       const petsSnapshot = await getDocs(petsCol);
-      const petsPromises = petsSnapshot.docs.map(async (petDoc) => {
-        const entriesCol = collection(db, `users/${userId}/pets/${petDoc.id}/entries`);
+      
+      const pets = await Promise.all(petsSnapshot.docs.map(async (pDoc) => {
+        const entriesCol = collection(db, `users/${userId}/pets/${pDoc.id}/entries`);
         const countSnap = await getCountFromServer(entriesCol);
-        const entryCount = countSnap.data().count;
-        return { id: petDoc.id, ...petDoc.data(), entryCount } as Pet;
-      });
-      const pets = await Promise.all(petsPromises);
+        return { id: pDoc.id, ...pDoc.data(), entryCount: countSnap.data().count } as Pet;
+      }));
+
       const eventsCol = collection(db, `users/${userId}/events`);
       const eventsSnapshot = await getDocs(eventsCol);
       const events = eventsSnapshot.docs.map(e => ({ id: e.id, ...e.data() } as EventDoc));
-      const newUsers = [...users];
-      newUsers[userIndex] = { ...newUsers[userIndex], pets, events };
-      setUsers(newUsers);
-    } catch (error: any) {
-      alert('Error loading user data: ' + error.message);
+
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, pets, events } : u));
+    } catch (error: any) { 
+      console.error("Error loading user subdata:", error); 
     }
   };
+
   const loadPetEntries = async (userId: string, petId: string) => {
+    const pKey = `${userId}-${petId}`;
     try {
-      const userIndex = users.findIndex(u => u.id === userId);
-      if (userIndex === -1) return;
-      const petIndex = users[userIndex].pets!.findIndex(p => p.id === petId);
-      if (petIndex === -1) return;
-      const entriesCol = collection(db, `users/${userId}/pets/${petId}/entries`);
-      const entriesSnapshot = await getDocs(entriesCol);
-      const entries = entriesSnapshot.docs.map(e => ({ id: e.id, ...e.data() } as Entry));
-      const newUsers = [...users];
-      newUsers[userIndex].pets![petIndex] = { ...newUsers[userIndex].pets![petIndex], entries };
-      setUsers(newUsers);
-    } catch (error: any) {
-      alert('Error loading pet entries: ' + error.message);
+      const snap = await getDocs(collection(db, `users/${userId}/pets/${petId}/entries`));
+      const entries = snap.docs.map(e => ({ id: e.id, ...e.data() } as Entry));
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u;
+        return { ...u, pets: u.pets?.map(p => p.id === petId ? { ...p, entries } : p) };
+      }));
+    } catch (error: any) { 
+      console.error("Error loading entries:", error); 
     }
   };
+
   const fetchFeedback = async () => {
     setLoadingFeedback(true);
     try {
-      const feedbackCol = collection(db, 'feedback');
-      const feedbackSnapshot = await getDocs(feedbackCol);
-      setFeedback(feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback)));
-    } catch (error: any) {
-      alert('Error fetching feedback: ' + error.message);
+      const snap = await getDocs(collection(db, 'feedback'));
+      setFeedback(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback)));
+    } catch (error: any) { 
+      console.error(error); 
+    } finally { 
+      setLoadingFeedback(false); 
     }
-    setLoadingFeedback(false);
   };
+
+  // --- CRUD Actions ---
   const deleteItem = async (path: string) => {
-    if (!confirm('Delete this item and all sub-data?')) return;
+    if (!confirm('Are you sure you want to delete this?')) return;
     try {
       await deleteDoc(docFromPath(path));
-      const parts = path.split('/').filter(Boolean);
-      if (parts[0] === 'feedback') {
-        setFeedback(prev => prev.filter(f => f.id !== parts[1]));
-      } else if (parts[0] === 'users') {
-        if (parts.length === 2) {
-          // delete user
-          setUsers(prev => prev.filter(u => u.id !== parts[1]));
-        } else if (parts.length === 4 && parts[2] === 'pets') {
-          // delete pet
-          setUsers(prev => {
-            return prev.map(u => {
-              if (u.id === parts[1]) {
-                return { ...u, pets: u.pets?.filter(p => p.id !== parts[3]) };
-              }
-              return u;
-            });
-          });
-        } else if (parts.length === 4 && parts[2] === 'events') {
-          // delete event
-          setUsers(prev => {
-            return prev.map(u => {
-              if (u.id === parts[1]) {
-                return { ...u, events: u.events?.filter(e => e.id !== parts[3]) };
-              }
-              return u;
-            });
-          });
-        }
-      }
-    } catch (error: any) {
-      alert('Error: ' + error.message);
+      alert("Deleted successfully.");
+      activeTab === 'feedback' ? fetchFeedback() : fetchUsers();
+    } catch (error: any) { 
+      alert(error.message); 
     }
   };
-  // NEW: toggle expand/collapse for users
-  const toggleExpandUser = (userId: string) => {
-    setExpandedUsers(prev => {
-      const isExpanding = !prev[userId];
-      if (isExpanding) {
-        const user = users.find(u => u.id === userId);
-        if (user && user.pets === undefined) {
-          loadUserData(userId);
-        }
-      }
-      return { ...prev, [userId]: isExpanding };
+
+  const startEditing = (path: string, data: any) => {
+    const editableData: Record<string, any> = {};
+    Object.entries(data).forEach(([k, v]) => {
+      if (['id', 'pets', 'events', 'entries', 'entryCount'].includes(k)) return;
+      editableData[k] = v instanceof Timestamp ? v.toDate().toISOString() : v;
     });
-  };
-  // NEW: toggle expand/collapse for pets
-  const toggleExpandPet = (userId: string, petId: string) => {
-    const key = `${userId}::${petId}`;
-    setExpandedPets(prev => {
-      const isExpanding = !prev[key];
-      if (isExpanding) {
-        const user = users.find(u => u.id === userId);
-        const pet = user?.pets?.find(p => p.id === petId);
-        if (pet && pet.entries === undefined) {
-          loadPetEntries(userId, petId);
-        }
-      }
-      return { ...prev, [key]: isExpanding };
-    });
-  };
-  // NEW: toggle expand/collapse for events
-  const toggleExpandEvent = (userId: string, eventId: string) => {
-    const key = `${userId}::${eventId}`;
-    setExpandedEvents(prev => ({ ...prev, [key]: !prev[key] }));
+    setEditJsonValue(prev => ({ ...prev, [path]: JSON.stringify(editableData, null, 2) }));
+    setEditMode(prev => ({ ...prev, [path]: true }));
   };
 
-  // SEARCH HELPERS (NEW)
-  const normalize = (s: any) => (s === undefined || s === null) ? '' : String(s).toLowerCase();
-  const userMatchesQuery = (user: User, query: string, field: typeof searchField) => {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    if (field === 'id') return user.id.toLowerCase().includes(q);
-    if (field === 'email') return normalize(user.email).includes(q);
-    if (field === 'displayName') return normalize(user.displayName || user.name).includes(q);
-    // 'any' - search across all values
-    for (const key of Object.keys(user)) {
-      if (key === 'pets' || key === 'events') continue; // skip heavy nested arrays
-      const val = (user as any)[key];
-      if (normalize(val).includes(q)) return true;
+  const saveChanges = async (path: string) => {
+    try {
+      const payload = JSON.parse(editJsonValue[path]);
+      await updateDoc(docFromPath(path), payload);
+      setEditMode(prev => ({ ...prev, [path]: false }));
+      alert("Saved successfully!");
+      fetchUsers();
+    } catch (error: any) { 
+      alert("Invalid JSON or Update Error: " + error.message); 
     }
-    return false;
   };
 
+  // --- Search Logic ---
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
-    return users.filter(u => userMatchesQuery(u, searchQuery, searchField));
+    const q = searchQuery.toLowerCase();
+    return users.filter(user => {
+      if (searchField === 'id') return user.id.toLowerCase().includes(q);
+      if (searchField === 'email') return String(user.email || '').toLowerCase().includes(q);
+      if (searchField === 'displayName') return String(user.displayName || user.name || '').toLowerCase().includes(q);
+      return Object.values(user).some(val => String(val).toLowerCase().includes(q));
+    });
   }, [users, searchQuery, searchField]);
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl font-bold text-blue-600">
-        Checking admin permissions...
+      <div className="min-h-screen flex items-center justify-center font-bold text-blue-600">
+        Checking permissions...
       </div>
-    )
+    );
   }
-  if (!isAdmin) return null;
+
+  // Button styles
+  const btnBase = "px-3 py-1 rounded text-sm font-medium transition-colors duration-200";
+  const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700`;
+  const btnSecondary = `${btnBase} bg-gray-200 text-gray-800 hover:bg-gray-300`;
+  const btnDanger = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
+
+  const LoadingIndicator = ({ text, size = 'large' }: { text: string; size?: 'small' | 'large' }) => (
+    <div className={`flex flex-col items-center justify-center ${size === 'large' ? 'py-20' : 'py-10'}`}>
+      <div className={`animate-spin rounded-full ${size === 'large' ? 'h-10 w-10' : 'h-8 w-8'} border-b-2 border-blue-500 ${size === 'large' ? 'mb-4' : 'mb-2'}`}></div>
+      <p className={`text-blue-500 font-medium ${size === 'small' ? 'text-sm' : ''}`}>{text}</p>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="flex border-b overflow-x-auto">
-            {[
-              { id: 'manage-users', label: 'Manage Users' },
-              { id: 'feedback', label: 'Feedback' }
-            ].map((tab) => (
+        
+        <div className="bg-white rounded-lg shadow mb-6 overflow-hidden">
+          <div className="flex border-b">
+            {(['manage-users', 'feedback'] as TabType[]).map((t) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabType)}
-                className={`px-6 py-3 font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-500'
-                }`}
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`px-6 py-4 font-medium capitalize ${activeTab === t ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
               >
-                {tab.label}
+                {t.replace('-', ' ')}
               </button>
             ))}
           </div>
         </div>
+
         {activeTab === 'manage-users' && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">User, Pet & Entry Management</h2>
-
-            {/* SEARCH UI (NEW) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <label className="text-sm text-gray-600">Search</label>
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
-                  placeholder="Type to search users..."
-                  className="border rounded px-3 py-2 text-sm w-[320px]"
-                />
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-sm px-3 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                >Clear</button>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Field</label>
-                <select value={searchField} onChange={(e) => setSearchField(e.target.value as any)} className="border rounded px-3 py-2 text-sm">
-                  <option value="any">Any field</option>
-                  <option value="id">User ID</option>
-                  <option value="email">Email</option>
-                  <option value="displayName">Name</option>
-                </select>
-              </div>
-              <div className="ml-auto text-xs text-gray-500">Showing {filteredUsers.length} of {users.length} users</div>
+            <div className="flex flex-wrap gap-4 mb-6 items-center">
+              <input
+                value={searchQuery}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                placeholder="Search database..."
+                className="border rounded px-4 py-2 text-sm w-full md:w-80"
+              />
+              <select 
+                value={searchField} 
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSearchField(e.target.value as SearchField)} 
+                className="border rounded px-3 py-2 text-sm"
+              >
+                <option value="any">Any Field</option>
+                <option value="id">User ID</option>
+                <option value="email">Email</option>
+                <option value="displayName">Name</option>
+              </select>
+              <div className="text-xs text-gray-400">Found {filteredUsers.length} users</div>
             </div>
 
             {loadingUsers ? (
-              <div className="text-center py-8 animate-pulse text-blue-600 font-medium">Loading users...</div>
+              <LoadingIndicator text="Loading Users..." />
             ) : (
-              filteredUsers.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No users match your search.</div>
-              ) : (
-                filteredUsers.map(user => {
-                  const userPath = `users/${user.id}`;
-                  return (
-                    <div key={user.id} className="mb-6 border rounded-lg overflow-hidden bg-white shadow-sm">
-                      <div className="bg-gray-100 p-3 flex justify-between items-center border-b">
-                        <button
-                          onClick={() => toggleExpandUser(user.id)}
-                          className="flex items-center gap-2 font-bold text-gray-700"
-                        >
-                          <span className="text-xs">{expandedUsers[user.id] ? '▼' : '▶'}</span>
-                          User: {user.id}
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => deleteItem(userPath)} className="text-red-400 hover:text-red-600 p-1 text-lg">🗑️</button>
-                        </div>
+              filteredUsers.map(user => {
+                const uPath = `users/${user.id}`;
+                return (
+                  <div key={user.id} className="mb-6 border rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-gray-100 p-4 flex justify-between items-center">
+                      <button
+                        onClick={() => {
+                          const willExpand = !expandedUsers[user.id];
+                          setExpandedUsers(prev => ({ ...prev, [user.id]: willExpand }));
+                          if (willExpand && !user.pets && !loadingUserSubdata[user.id]) {
+                            setLoadingUserSubdata(prev => ({ ...prev, [user.id]: true }));
+                            loadUserData(user.id).finally(() =>
+                              setLoadingUserSubdata(prev => ({ ...prev, [user.id]: false }))
+                            );
+                          }
+                        }}
+                        className="font-bold text-gray-700 flex items-center gap-2"
+                      >
+                        <span>{expandedUsers[user.id] ? '▼' : '▶'}</span>
+                        User: {user.email || user.id}
+                      </button>
+                      <div className="flex gap-2">
+                        {editMode[uPath] ? (
+                          <button onClick={() => saveChanges(uPath)} className={btnPrimary}>Save</button>
+                        ) : (
+                          <button onClick={() => startEditing(uPath, user)} className={btnSecondary}>Edit User</button>
+                        )}
                       </div>
-                      {expandedUsers[user.id] && (
-                        <div className="p-4 space-y-4">
-                          {user.pets === undefined ? (
-                            <div className="text-center py-4 animate-pulse text-blue-600 font-medium">Loading user data...</div>
-                          ) : (
-                            <>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pb-4 border-b">
-                                {Object.entries(user).filter(([k]) => k !== 'id' && k !== 'pets' && k !== 'events').map(([k, v]) => (
-                                  <div key={k} className="text-xs">
-                                    <span className="font-bold text-gray-500 uppercase">{k}:</span> {formatDisplayValue(v)}
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="space-y-4 pt-2">
-                                {/* PETS */}
-                                <div className="mt-4 ml-2">
-                                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Pets</h3>
-                                  {user.pets.length === 0 ? (
-                                    <div className="text-xs text-gray-400">No pets</div>
-                                  ) : (
-                                    user.pets.map(pet => {
-                                      const petPath = `${userPath}/pets/${pet.id}`;
-                                      const petKey = `${user.id}::${pet.id}`;
-                                      const isExpanded = !!expandedPets[petKey];
-                                      return (
-                                        <div key={pet.id} className="mb-3 border rounded-md bg-gray-50">
-                                          {/* Pet header - always visible */}
-                                          <div className="p-3 flex justify-between items-center gap-4">
-                                            <button onClick={() => toggleExpandPet(user.id, pet.id)} className="flex items-center gap-2 text-left">
-                                              <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                                              <div className="text-sm font-medium text-gray-700">{pet.name ?? pet.id}</div>
-                                              <div className="text-[11px] text-gray-400 ml-2">Entries: {pet.entryCount ?? pet.entries?.length ?? 0}</div>
-                                            </button>
-                                            <div className="flex items-center gap-3">
-                                              <button onClick={() => deleteItem(petPath)} className="text-red-500">🗑️</button>
-                                            </div>
-                                          </div>
-                                          {/* Collapsible details (read-only) */}
-                                          {isExpanded && (
-                                            <div className="p-3 border-t text-xs space-y-3">
-                                              <div className="text-gray-700 space-y-1">
-                                                {Object.entries(pet)
-                                                  .filter(([k]) => k !== 'id' && k !== 'entries' && k !== 'entryCount')
-                                                  .map(([k, v]) => (
-                                                    <div key={k}>
-                                                      <strong className="mr-1">{k}:</strong>
-                                                      {formatDisplayValue(v)}
-                                                    </div>
-                                                  ))}
-                                              </div>
-                                              {/* ENTRIES (read-only, inside same card) */}
-                                              <div className="mt-2 border-t pt-2">
-                                                <div className="text-[11px] font-semibold text-gray-500 mb-1">Entries ({pet.entryCount ?? pet.entries?.length ?? 0})</div>
-                                                {pet.entries === undefined ? (
-                                                  <div className="text-xs text-blue-600 animate-pulse">Loading entries...</div>
-                                                ) : pet.entries.length === 0 ? (
-                                                  <div className="text-xs text-gray-400">No entries</div>
-                                                ) : (
-                                                  <div className="space-y-1 text-xs">
-                                                    {pet.entries.map(entry => (
-                                                      <div key={entry.id} className="bg-white border rounded px-2 py-1">
-                                                        {Object.entries(entry)
-                                                          .filter(([k]) => k !== 'id')
-                                                          .map(([k, v]) => (
-                                                            <div key={k}><strong>{k}:</strong> {formatDisplayValue(v)}</div>
-                                                          ))}
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
-                                          )}
-                                          <div className="px-3 pb-3 text-xs text-gray-400">{pet.id}</div>
-                                        </div>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                                {/* EVENTS */}
-                                <div className="mt-4 ml-2">
-                                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Events</h3>
-                                  {user.events?.length === 0 ? (
-                                    <div className="text-xs text-gray-400">No events</div>
-                                  ) : (
-                                    user.events!.map(event => {
-                                      const eventPath = `${userPath}/events/${event.id}`;
-                                      const eventKey = `${user.id}::${event.id}`;
-                                      const isExpanded = !!expandedEvents[eventKey];
-                                      return (
-                                        <div key={event.id} className="mb-3 border rounded-md bg-gray-50">
-                                          <div className="p-3 flex justify-between items-center gap-4">
-                                            <button onClick={() => toggleExpandEvent(user.id, event.id)} className="flex items-center gap-2 text-left">
-                                              <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
-                                              <div className="text-sm font-medium text-gray-700">{event.title ?? event.id}</div>
-                                              <div className="text-[11px] text-gray-400 ml-2">{formatDisplayValue(event.date ?? '')}</div>
-                                            </button>
-                                            <div className="flex items-center gap-3">
-                                              <button onClick={() => deleteItem(eventPath)} className="text-red-500">🗑️</button>
-                                            </div>
-                                          </div>
-                                          {isExpanded && (
-                                            <div className="p-3 border-t text-xs space-y-3">
-                                              <div className="text-gray-700">
-                                                {Object.entries(event).filter(([k]) => k !== 'id').map(([k, v]) => (
-                                                  <div key={k}><strong className="mr-1">{k}:</strong> {formatDisplayValue(v)}</div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                          <div className="px-3 pb-3 text-xs text-gray-400">{event.id}</div>
-                                        </div>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
-                  );
-                })
-              )
+                    
+                    {expandedUsers[user.id] && (
+                      <div className="p-4 bg-white space-y-6">
+                        {editMode[uPath] ? (
+                          <textarea
+                            value={editJsonValue[uPath]}
+                            onChange={e => setEditJsonValue(v => ({ ...v, [uPath]: e.target.value }))}
+                            className="w-full h-40 font-mono text-xs border p-3 rounded"
+                          />
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs border-b pb-4">
+                            {Object.entries(user)
+                              .filter(([k]) => !['id', 'pets', 'events'].includes(k))
+                              .map(([k, v]) => (
+                                <div key={k}>
+                                  <span className="font-bold uppercase text-gray-400">{k}:</span> {formatDisplayValue(v)}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+
+                        {loadingUserSubdata[user.id] ? (
+                          <LoadingIndicator text="Loading pets and events..." size="small" />
+                        ) : (
+                          <>
+                            <div className="space-y-4">
+                              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Pets</h3>
+                              {user.pets && user.pets.length > 0 ? (
+                                user.pets.map(pet => {
+                                  const pPath = `${uPath}/pets/${pet.id}`;
+                                  const pKey = `${user.id}-${pet.id}`;
+                                  return (
+                                    <div key={pet.id} className="border rounded-lg bg-gray-50 overflow-hidden">
+                                      <div className="p-3 flex justify-between items-center bg-gray-200/50">
+                                        <button
+                                          onClick={() => {
+                                            const willExpand = !expandedPets[pKey];
+                                            setExpandedPets(prev => ({ ...prev, [pKey]: willExpand }));
+                                            if (willExpand && !pet.entries && !loadingPetEntries[pKey]) {
+                                              setLoadingPetEntries(prev => ({ ...prev, [pKey]: true }));
+                                              loadPetEntries(user.id, pet.id).finally(() =>
+                                                setLoadingPetEntries(prev => ({ ...prev, [pKey]: false }))
+                                              );
+                                            }
+                                          }}
+                                          className="text-sm font-semibold"
+                                        >
+                                          {expandedPets[pKey] ? '▼' : '▶'} {pet.name || 'Unnamed Pet'}
+                                          <span className="text-[10px] text-gray-400 ml-2">
+                                            ({pet.entryCount ?? 0} entries • ID: {pet.id})
+                                          </span>
+                                        </button>
+                                        <div className="flex gap-2">
+                                          {editMode[pPath] ? <button onClick={() => saveChanges(pPath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(pPath, pet)} className={btnSecondary}>Edit Pet</button>}
+                                          <button onClick={() => deleteItem(pPath)} className={btnDanger}>Delete</button>
+                                        </div>
+                                      </div>
+                                      {expandedPets[pKey] && (
+                                        <div className="p-3 space-y-4">
+                                          {editMode[pPath] ? (
+                                            <textarea value={editJsonValue[pPath]} onChange={e => setEditJsonValue(v => ({ ...v, [pPath]: e.target.value }))} className="w-full h-32 font-mono text-xs border p-2 rounded" />
+                                          ) : (
+                                            <div className="text-xs space-y-1">
+                                              {Object.entries(pet).filter(([k]) => !['id', 'entries', 'entryCount'].includes(k)).map(([k, v]) => (
+                                                <div key={k}><strong>{k}:</strong> {formatDisplayValue(v)}</div>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <div className="pl-6 border-l-2 border-blue-200 space-y-2">
+                                            <h4 className="text-[10px] font-bold text-blue-400 uppercase">Entries ({pet.entryCount ?? 0})</h4>
+                                            {loadingPetEntries[pKey] ? (
+                                              <LoadingIndicator text="Loading entries..." size="small" />
+                                            ) : pet.entries && pet.entries.length > 0 ? (
+                                              pet.entries.map(entry => {
+                                                const enPath = `${pPath}/entries/${entry.id}`;
+                                                return (
+                                                  <div key={entry.id} className="bg-white p-2 border rounded shadow-sm text-[11px]">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                      <span className="text-gray-400 font-mono italic">{entry.id}</span>
+                                                      <div className="flex gap-2">
+                                                        {editMode[enPath] ? <button onClick={() => saveChanges(enPath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(enPath, entry)} className={btnSecondary}>Edit</button>}
+                                                        <button onClick={() => deleteItem(enPath)} className={btnDanger}>Delete</button>
+                                                      </div>
+                                                    </div>
+                                                    {editMode[enPath] ? (
+                                                      <textarea value={editJsonValue[enPath]} onChange={e => setEditJsonValue(v => ({ ...v, [enPath]: e.target.value }))} className="w-full h-20 font-mono p-1 border rounded" />
+                                                    ) : (
+                                                      <div className="grid grid-cols-2 gap-x-4">
+                                                        {Object.entries(entry).filter(([k]) => k !== 'id').map(([k, v]) => (
+                                                          <div key={k}><strong>{k}:</strong> {formatDisplayValue(v)}</div>
+                                                        ))}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })
+                                            ) : (
+                                              <div className="text-xs text-gray-500 italic">No entries yet.</div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No pets registered for this user.</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-4">
+                              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Events</h3>
+                              {user.events && user.events.length > 0 ? (
+                                user.events.map(event => {
+                                  const ePath = `${uPath}/events/${event.id}`;
+                                  return (
+                                    <div key={event.id} className="border rounded-lg bg-gray-50 overflow-hidden text-xs">
+                                      <div className="p-3 flex justify-between items-center">
+                                        <button onClick={() => setExpandedEvents(v => ({ ...v, [ePath]: !v[ePath] }))} className="font-semibold">
+                                          {expandedEvents[ePath] ? '▼' : '▶'} {event.title || event.id}
+                                        </button>
+                                        <div className="flex gap-2">
+                                          {editMode[ePath] ? <button onClick={() => saveChanges(ePath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(ePath, event)} className={btnSecondary}>Edit</button>}
+                                          <button onClick={() => deleteItem(ePath)} className={btnDanger}>Delete</button>
+                                        </div>
+                                      </div>
+                                      {expandedEvents[ePath] && (
+                                        <div className="p-3 bg-white border-t">
+                                          {editMode[ePath] ? (
+                                            <textarea value={editJsonValue[ePath]} onChange={e => setEditJsonValue(v => ({ ...v, [ePath]: e.target.value }))} className="w-full h-24 font-mono p-2 border" />
+                                          ) : (
+                                            Object.entries(event).filter(([k]) => k !== 'id').map(([k, v]) => (
+                                              <div key={k}><strong>{k}:</strong> {formatDisplayValue(v)}</div>
+                                            ))
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No events.</p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}
+
         {activeTab === 'feedback' && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><span>💬</span> Feedback</h2>
             {loadingFeedback ? (
-              <div className="text-center py-8 animate-pulse text-blue-600 font-medium">Loading feedback...</div>
+              <LoadingIndicator text="Loading Feedback..." />
             ) : (
-              <div className="grid gap-4">
-                {feedback.map(item => (
-                  <div key={item.id} className="border rounded-xl p-5 bg-white relative">
-                    <button onClick={() => deleteItem(`feedback/${item.id}`)} className="absolute top-4 right-4 grayscale hover:grayscale-0">🗑️</button>
-                    {Object.entries(item).filter(([k]) => k !== 'id').map(([k, v]) => (
-                      <div key={k} className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1">
-                        <span className="text-xs font-bold text-gray-400 uppercase">{k}</span>
-                        <span className="text-sm text-gray-700">{formatDisplayValue(v)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
+              <>
+                <h2 className="text-xl font-bold mb-6">User Feedback</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {feedback.map(item => (
+                    <div key={item.id} className="p-4 border rounded-xl relative group bg-white shadow-sm">
+                      <button onClick={() => deleteItem(`feedback/${item.id}`)} className={`${btnDanger} absolute top-2 right-2`}>Delete</button>
+                      {Object.entries(item).map(([k, v]) => (
+                        <div key={k} className="mb-1 text-sm">
+                          <span className="font-bold text-gray-400 text-[10px] uppercase block leading-tight">{k}</span>
+                          <span>{formatDisplayValue(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
