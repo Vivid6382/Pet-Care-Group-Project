@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect, useMemo, ChangeEvent } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -13,26 +12,23 @@ import {
   Timestamp,
   getDoc,
   getCountFromServer,
-  DocumentData
+  DocumentData,
+  deleteField
 } from 'firebase/firestore';
-
 // --- Interfaces ---
 interface Entry extends DocumentData {
   id: string;
 }
-
 interface Pet extends DocumentData {
   id: string;
   name?: string;
   entries?: Entry[];
   entryCount?: number;
 }
-
 interface EventDoc extends DocumentData {
   id: string;
   title?: string;
 }
-
 interface UserProfile extends DocumentData {
   id: string;
   email?: string;
@@ -42,72 +38,64 @@ interface UserProfile extends DocumentData {
   pets?: Pet[];
   events?: EventDoc[];
 }
-
 interface Feedback extends DocumentData {
   id: string;
 }
-
 type TabType = 'manage-users' | 'feedback';
 type SearchField = 'any' | 'id' | 'email' | 'displayName';
-
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('manage-users');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  
   // UI Expansion States
   const [expandedUsers, setExpandedUsers] = useState<Record<string, boolean>>({});
   const [expandedPets, setExpandedPets] = useState<Record<string, boolean>>({});
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
-  
   // Loading States
   const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
   const [loadingFeedback, setLoadingFeedback] = useState<boolean>(false);
   const [loadingUserSubdata, setLoadingUserSubdata] = useState<Record<string, boolean>>({});
   const [loadingPetEntries, setLoadingPetEntries] = useState<Record<string, boolean>>({});
-  
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  
   // --- GENERALIZED EDITING STATE ---
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [editJsonValue, setEditJsonValue] = useState<Record<string, string>>({});
-  
+  const [originalEditData, setOriginalEditData] = useState<Record<string, Record<string, any>>>({});
+  // --- SAVING STATE ---
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchField, setSearchField] = useState<SearchField>('any');
-
   // --- Auth Check ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser: FirebaseUser | null) => {
-      if (!currentUser) { 
-        router.replace('/'); 
-        return; 
+      if (!currentUser) {
+        router.replace('/');
+        return;
       }
       try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists() || (userSnap.data() as UserProfile).admin !== true) {
-          router.replace('/'); 
+          router.replace('/');
           return;
         }
         setIsAdmin(true);
-      } catch (err) { 
-        router.replace('/'); 
-      } finally { 
-        setCheckingAuth(false); 
+      } catch (err) {
+        router.replace('/');
+      } finally {
+        setCheckingAuth(false);
       }
     });
     return () => unsubscribe();
   }, [router]);
-
   useEffect(() => {
     if (isAdmin) {
       activeTab === 'feedback' ? fetchFeedback() : fetchUsers();
     }
   }, [isAdmin, activeTab]);
-
   // --- Formatting Helpers ---
   const formatDisplayValue = (value: any): string => {
     if (value instanceof Timestamp) return value.toDate().toLocaleString();
@@ -116,12 +104,10 @@ export default function AdminPage() {
     if (typeof value === 'object' && value !== null) return JSON.stringify(value);
     return String(value ?? '');
   };
-
   const docFromPath = (path: string) => {
     const parts = path.split('/').filter(Boolean);
     return doc(db, parts[0], ...parts.slice(1));
   };
-
   // --- Fetching Logic ---
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -130,34 +116,29 @@ export default function AdminPage() {
       const usersSnapshot = await getDocs(usersCol);
       const userData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
       setUsers(userData);
-    } catch (error: any) { 
-      alert('Error fetching users: ' + error.message); 
-    } finally { 
-      setLoadingUsers(false); 
+    } catch (error: any) {
+      alert('Error fetching users: ' + error.message);
+    } finally {
+      setLoadingUsers(false);
     }
   };
-
   const loadUserData = async (userId: string) => {
     try {
       const petsCol = collection(db, `users/${userId}/pets`);
       const petsSnapshot = await getDocs(petsCol);
-      
       const pets = await Promise.all(petsSnapshot.docs.map(async (pDoc) => {
         const entriesCol = collection(db, `users/${userId}/pets/${pDoc.id}/entries`);
         const countSnap = await getCountFromServer(entriesCol);
         return { id: pDoc.id, ...pDoc.data(), entryCount: countSnap.data().count } as Pet;
       }));
-
       const eventsCol = collection(db, `users/${userId}/events`);
       const eventsSnapshot = await getDocs(eventsCol);
       const events = eventsSnapshot.docs.map(e => ({ id: e.id, ...e.data() } as EventDoc));
-
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, pets, events } : u));
-    } catch (error: any) { 
-      console.error("Error loading user subdata:", error); 
+    } catch (error: any) {
+      console.error("Error loading user subdata:", error);
     }
   };
-
   const loadPetEntries = async (userId: string, petId: string) => {
     const pKey = `${userId}-${petId}`;
     try {
@@ -167,35 +148,57 @@ export default function AdminPage() {
         if (u.id !== userId) return u;
         return { ...u, pets: u.pets?.map(p => p.id === petId ? { ...p, entries } : p) };
       }));
-    } catch (error: any) { 
-      console.error("Error loading entries:", error); 
+    } catch (error: any) {
+      console.error("Error loading entries:", error);
     }
   };
-
   const fetchFeedback = async () => {
     setLoadingFeedback(true);
     try {
       const snap = await getDocs(collection(db, 'feedback'));
       setFeedback(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback)));
-    } catch (error: any) { 
-      console.error(error); 
-    } finally { 
-      setLoadingFeedback(false); 
+    } catch (error: any) {
+      console.error(error);
+    } finally {
+      setLoadingFeedback(false);
     }
   };
-
   // --- CRUD Actions ---
   const deleteItem = async (path: string) => {
     if (!confirm('Are you sure you want to delete this?')) return;
     try {
       await deleteDoc(docFromPath(path));
+      const parts = path.split('/');
+      if (parts[0] === 'feedback') {
+        fetchFeedback();
+      } else if (parts[0] === 'users') {
+        const userId = parts[1];
+        if (parts.length === 4) {
+          const coll = parts[2];
+          const itemId = parts[3];
+          if (coll === 'pets') {
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, pets: u.pets?.filter(p => p.id !== itemId) ?? [] } : u));
+          } else if (coll === 'events') {
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, events: u.events?.filter(e => e.id !== itemId) ?? [] } : u));
+          }
+        } else if (parts.length === 6 && parts[2] === 'pets' && parts[4] === 'entries') {
+          const petId = parts[3];
+          const entryId = parts[5];
+          setUsers(prev => prev.map(u => u.id === userId ? {
+            ...u,
+            pets: u.pets?.map(p => p.id === petId ? {
+              ...p,
+              entries: p.entries?.filter(en => en.id !== entryId) ?? [],
+              entryCount: p.entryCount ? Math.max(0, p.entryCount - 1) : 0
+            } : p) ?? []
+          } : u));
+        }
+      }
       alert("Deleted successfully.");
-      activeTab === 'feedback' ? fetchFeedback() : fetchUsers();
-    } catch (error: any) { 
-      alert(error.message); 
+    } catch (error: any) {
+      alert(error.message);
     }
   };
-
   const startEditing = (path: string, data: any) => {
     const editableData: Record<string, any> = {};
     Object.entries(data).forEach(([k, v]) => {
@@ -203,21 +206,140 @@ export default function AdminPage() {
       editableData[k] = v instanceof Timestamp ? v.toDate().toISOString() : v;
     });
     setEditJsonValue(prev => ({ ...prev, [path]: JSON.stringify(editableData, null, 2) }));
+    setOriginalEditData(prev => ({ ...prev, [path]: { ...editableData } }));
     setEditMode(prev => ({ ...prev, [path]: true }));
   };
-
+  const cancelEdit = (path: string) => {
+    setEditMode(prev => {
+      const newEditMode = { ...prev };
+      delete newEditMode[path];
+      return newEditMode;
+    });
+    setEditJsonValue(prev => {
+      const newEditJsonValue = { ...prev };
+      delete newEditJsonValue[path];
+      return newEditJsonValue;
+    });
+    setOriginalEditData(prev => {
+      const newOrig = { ...prev };
+      delete newOrig[path];
+      return newOrig;
+    });
+  };
   const saveChanges = async (path: string) => {
+    setSaving(prev => ({ ...prev, [path]: true }));
     try {
-      const payload = JSON.parse(editJsonValue[path]);
-      await updateDoc(docFromPath(path), payload);
-      setEditMode(prev => ({ ...prev, [path]: false }));
+      const newPayloadRaw: Record<string, any> = JSON.parse(editJsonValue[path] || '{}');
+
+      // Process values (convert ISO date strings back to Timestamp)
+      const processedPayload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(newPayloadRaw)) {
+        let val = value;
+        if (typeof val === 'string') {
+          const trimmed = val.trim();
+          // Loose ISO check – if it parses as a valid date, treat as Timestamp
+          const date = new Date(trimmed);
+          if (!isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(trimmed)) {
+            val = Timestamp.fromDate(date);
+          }
+        }
+        processedPayload[key] = val;
+      }
+
+      // Add field deletes for removed keys
+      const original = originalEditData[path] || {};
+      Object.keys(original).forEach((key) => {
+        if (!(key in newPayloadRaw)) {
+          processedPayload[key] = deleteField();
+        }
+      });
+
+      // Perform update
+      const docRef = docFromPath(path);
+      await updateDoc(docRef, processedPayload);
+
+      // Fetch fresh document to accurately reflect deletes and type conversions
+      const updatedSnap = await getDoc(docRef);
+      if (updatedSnap.exists()) {
+        const updatedData = updatedSnap.data()!;
+
+        const parts = path.split('/');
+        const userId = parts[1];
+
+        if (parts.length === 2 && parts[0] === 'users') {
+          // Top-level user
+          setUsers(prev => prev.map(u =>
+            u.id === userId
+              ? { id: u.id, pets: u.pets, events: u.events, ...updatedData }
+              : u
+          ));
+        } else if (parts.length === 4 && parts[0] === 'users') {
+          const coll = parts[2];
+          const itemId = parts[3];
+          if (coll === 'pets') {
+            setUsers(prev => prev.map(u =>
+              u.id === userId
+                ? {
+                    ...u,
+                    pets: u.pets?.map(p =>
+                      p.id === itemId
+                        ? { id: p.id, entryCount: p.entryCount ?? 0, entries: p.entries, ...updatedData }
+                        : p
+                    ) ?? []
+                  }
+                : u
+            ));
+          } else if (coll === 'events') {
+            setUsers(prev => prev.map(u =>
+              u.id === userId
+                ? {
+                    ...u,
+                    events: u.events?.map(e =>
+                      e.id === itemId
+                        ? { id: e.id, ...updatedData }
+                        : e
+                    ) ?? []
+                  }
+                : u
+            ));
+          }
+        } else if (parts.length === 6 && parts[0] === 'users' && parts[2] === 'pets' && parts[4] === 'entries') {
+          const petId = parts[3];
+          const entryId = parts[5];
+          setUsers(prev => prev.map(u =>
+            u.id === userId
+              ? {
+                  ...u,
+                  pets: u.pets?.map(p =>
+                    p.id === petId
+                      ? {
+                          ...p,
+                          entries: p.entries?.map(en =>
+                            en.id === entryId
+                              ? { id: en.id, ...updatedData }
+                              : en
+                          ) ?? []
+                        }
+                      : p
+                  ) ?? []
+                }
+              : u
+          ));
+        }
+      }
+
       alert("Saved successfully!");
-      fetchUsers();
-    } catch (error: any) { 
-      alert("Invalid JSON or Update Error: " + error.message); 
+      cancelEdit(path);
+    } catch (error: any) {
+      alert("Invalid JSON or Update Error: " + error.message);
+    } finally {
+      setSaving(prev => {
+        const newSaving = { ...prev };
+        delete newSaving[path];
+        return newSaving;
+      });
     }
   };
-
   // --- Search Logic ---
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;
@@ -229,7 +351,6 @@ export default function AdminPage() {
       return Object.values(user).some(val => String(val).toLowerCase().includes(q));
     });
   }, [users, searchQuery, searchField]);
-
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center font-bold text-blue-600">
@@ -237,25 +358,21 @@ export default function AdminPage() {
       </div>
     );
   }
-
   // Button styles
   const btnBase = "px-3 py-1 rounded text-sm font-medium transition-colors duration-200";
   const btnPrimary = `${btnBase} bg-blue-600 text-white hover:bg-blue-700`;
   const btnSecondary = `${btnBase} bg-gray-200 text-gray-800 hover:bg-gray-300`;
   const btnDanger = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
-
   const LoadingIndicator = ({ text, size = 'large' }: { text: string; size?: 'small' | 'large' }) => (
     <div className={`flex flex-col items-center justify-center ${size === 'large' ? 'py-20' : 'py-10'}`}>
       <div className={`animate-spin rounded-full ${size === 'large' ? 'h-10 w-10' : 'h-8 w-8'} border-b-2 border-blue-500 ${size === 'large' ? 'mb-4' : 'mb-2'}`}></div>
       <p className={`text-blue-500 font-medium ${size === 'small' ? 'text-sm' : ''}`}>{text}</p>
     </div>
   );
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
-        
         <div className="bg-white rounded-lg shadow mb-6 overflow-hidden">
           <div className="flex border-b">
             {(['manage-users', 'feedback'] as TabType[]).map((t) => (
@@ -269,7 +386,6 @@ export default function AdminPage() {
             ))}
           </div>
         </div>
-
         {activeTab === 'manage-users' && (
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex flex-wrap gap-4 mb-6 items-center">
@@ -279,9 +395,9 @@ export default function AdminPage() {
                 placeholder="Search database..."
                 className="border rounded px-4 py-2 text-sm w-full md:w-80"
               />
-              <select 
-                value={searchField} 
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSearchField(e.target.value as SearchField)} 
+              <select
+                value={searchField}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSearchField(e.target.value as SearchField)}
                 className="border rounded px-3 py-2 text-sm"
               >
                 <option value="any">Any Field</option>
@@ -291,7 +407,6 @@ export default function AdminPage() {
               </select>
               <div className="text-xs text-gray-400">Found {filteredUsers.length} users</div>
             </div>
-
             {loadingUsers ? (
               <LoadingIndicator text="Loading Users..." />
             ) : (
@@ -318,13 +433,21 @@ export default function AdminPage() {
                       </button>
                       <div className="flex gap-2">
                         {editMode[uPath] ? (
-                          <button onClick={() => saveChanges(uPath)} className={btnPrimary}>Save</button>
+                          <div className="flex gap-2">
+                            <button
+                              disabled={saving[uPath]}
+                              onClick={() => saveChanges(uPath)}
+                              className={`${btnPrimary} ${saving[uPath] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {saving[uPath] ? 'Saving...' : 'Save'}
+                            </button>
+                            <button onClick={() => cancelEdit(uPath)} className={btnSecondary}>Cancel</button>
+                          </div>
                         ) : (
                           <button onClick={() => startEditing(uPath, user)} className={btnSecondary}>Edit User</button>
                         )}
                       </div>
                     </div>
-                    
                     {expandedUsers[user.id] && (
                       <div className="p-4 bg-white space-y-6">
                         {editMode[uPath] ? (
@@ -344,7 +467,6 @@ export default function AdminPage() {
                               ))}
                           </div>
                         )}
-
                         {loadingUserSubdata[user.id] ? (
                           <LoadingIndicator text="Loading pets and events..." size="small" />
                         ) : (
@@ -377,7 +499,20 @@ export default function AdminPage() {
                                           </span>
                                         </button>
                                         <div className="flex gap-2">
-                                          {editMode[pPath] ? <button onClick={() => saveChanges(pPath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(pPath, pet)} className={btnSecondary}>Edit Pet</button>}
+                                          {editMode[pPath] ? (
+                                            <div className="flex gap-2">
+                                              <button
+                                                disabled={saving[pPath]}
+                                                onClick={() => saveChanges(pPath)}
+                                                className={`${btnPrimary} ${saving[pPath] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              >
+                                                {saving[pPath] ? 'Saving...' : 'Save'}
+                                              </button>
+                                              <button onClick={() => cancelEdit(pPath)} className={btnSecondary}>Cancel</button>
+                                            </div>
+                                          ) : (
+                                            <button onClick={() => startEditing(pPath, pet)} className={btnSecondary}>Edit Pet</button>
+                                          )}
                                           <button onClick={() => deleteItem(pPath)} className={btnDanger}>Delete</button>
                                         </div>
                                       </div>
@@ -404,7 +539,20 @@ export default function AdminPage() {
                                                     <div className="flex justify-between items-center mb-1">
                                                       <span className="text-gray-400 font-mono italic">{entry.id}</span>
                                                       <div className="flex gap-2">
-                                                        {editMode[enPath] ? <button onClick={() => saveChanges(enPath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(enPath, entry)} className={btnSecondary}>Edit</button>}
+                                                        {editMode[enPath] ? (
+                                                          <div className="flex gap-2">
+                                                            <button
+                                                              disabled={saving[enPath]}
+                                                              onClick={() => saveChanges(enPath)}
+                                                              className={`${btnPrimary} ${saving[enPath] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                              {saving[enPath] ? 'Saving...' : 'Save'}
+                                                            </button>
+                                                            <button onClick={() => cancelEdit(enPath)} className={btnSecondary}>Cancel</button>
+                                                          </div>
+                                                        ) : (
+                                                          <button onClick={() => startEditing(enPath, entry)} className={btnSecondary}>Edit</button>
+                                                        )}
                                                         <button onClick={() => deleteItem(enPath)} className={btnDanger}>Delete</button>
                                                       </div>
                                                     </div>
@@ -433,7 +581,6 @@ export default function AdminPage() {
                                 <p className="text-sm text-gray-500 italic">No pets registered for this user.</p>
                               )}
                             </div>
-
                             <div className="space-y-4">
                               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Events</h3>
                               {user.events && user.events.length > 0 ? (
@@ -446,7 +593,20 @@ export default function AdminPage() {
                                           {expandedEvents[ePath] ? '▼' : '▶'} {event.title || event.id}
                                         </button>
                                         <div className="flex gap-2">
-                                          {editMode[ePath] ? <button onClick={() => saveChanges(ePath)} className={btnPrimary}>Save</button> : <button onClick={() => startEditing(ePath, event)} className={btnSecondary}>Edit</button>}
+                                          {editMode[ePath] ? (
+                                            <div className="flex gap-2">
+                                              <button
+                                                disabled={saving[ePath]}
+                                                onClick={() => saveChanges(ePath)}
+                                                className={`${btnPrimary} ${saving[ePath] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              >
+                                                {saving[ePath] ? 'Saving...' : 'Save'}
+                                              </button>
+                                              <button onClick={() => cancelEdit(ePath)} className={btnSecondary}>Cancel</button>
+                                            </div>
+                                          ) : (
+                                            <button onClick={() => startEditing(ePath, event)} className={btnSecondary}>Edit</button>
+                                          )}
                                           <button onClick={() => deleteItem(ePath)} className={btnDanger}>Delete</button>
                                         </div>
                                       </div>
@@ -478,7 +638,6 @@ export default function AdminPage() {
             )}
           </div>
         )}
-
         {activeTab === 'feedback' && (
           <div className="bg-white rounded-lg shadow p-6">
             {loadingFeedback ? (
