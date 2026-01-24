@@ -15,34 +15,68 @@ import {
   DocumentData,
   deleteField
 } from 'firebase/firestore';
-// --- Interfaces ---
+// --- Updated Interfaces ---
 interface Entry extends DocumentData {
   id: string;
+  foodIntake?: number;
+  bcs?: number;
+  weight?: number;
+  date?: string | Timestamp; // appears as YYYY-MM-DD string in your example
 }
+
 interface Pet extends DocumentData {
   id: string;
   name?: string;
+  type?: string; // e.g., "dog"
+  createdAt?: Timestamp;
+  picture?: string; // URL or empty string / "none"
+  birthDate?: Timestamp;
   entries?: Entry[];
   entryCount?: number;
 }
+
+interface RRULE {
+  interval?: number;
+  freq?: string; // e.g., "weekly"
+  dtstart?: string; // ISO date string
+  count?: number;
+  // add more properties if you use other rrule options
+}
+
+interface ExtendedProps {
+  summary?: string;
+  type?: string;
+  // any custom props you add
+}
+
 interface EventDoc extends DocumentData {
   id: string;
   title?: string;
+  rrule?: RRULE;
+  allDay?: boolean;
+  extendedProps?: ExtendedProps;
+  backgroundColor?: string;
+  // add other calendar-related fields if needed (start, end, etc.)
 }
+
 interface UserProfile extends DocumentData {
-  id: string;
-  email?: string;
-  displayName?: string;
-  name?: string;
+  id: string; // uid
+  createdAt?: string | Timestamp; // in your example it's a formatted string
   admin?: boolean;
+  email?: string;
+  username?: string;
+  picture?: string; // "none" or URL
   pets?: Pet[];
   events?: EventDoc[];
 }
+
 interface Feedback extends DocumentData {
   id: string;
+  // feedback documents can have arbitrary fields (message, rating, etc.)
+  [key: string]: any;
 }
 type TabType = 'manage-users' | 'feedback';
-type SearchField = 'any' | 'id' | 'email' | 'displayName';
+type SearchField = 'any' | 'email' | 'username';
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('manage-users');
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -230,7 +264,6 @@ export default function AdminPage() {
     setSaving(prev => ({ ...prev, [path]: true }));
     try {
       const newPayloadRaw: Record<string, any> = JSON.parse(editJsonValue[path] || '{}');
-
       // Process values (convert ISO date strings back to Timestamp)
       const processedPayload: Record<string, any> = {};
       for (const [key, value] of Object.entries(newPayloadRaw)) {
@@ -245,7 +278,6 @@ export default function AdminPage() {
         }
         processedPayload[key] = val;
       }
-
       // Add field deletes for removed keys
       const original = originalEditData[path] || {};
       Object.keys(original).forEach((key) => {
@@ -253,19 +285,15 @@ export default function AdminPage() {
           processedPayload[key] = deleteField();
         }
       });
-
       // Perform update
       const docRef = docFromPath(path);
       await updateDoc(docRef, processedPayload);
-
       // Fetch fresh document to accurately reflect deletes and type conversions
       const updatedSnap = await getDoc(docRef);
       if (updatedSnap.exists()) {
         const updatedData = updatedSnap.data()!;
-
         const parts = path.split('/');
         const userId = parts[1];
-
         if (parts.length === 2 && parts[0] === 'users') {
           // Top-level user
           setUsers(prev => prev.map(u =>
@@ -280,26 +308,26 @@ export default function AdminPage() {
             setUsers(prev => prev.map(u =>
               u.id === userId
                 ? {
-                    ...u,
-                    pets: u.pets?.map(p =>
-                      p.id === itemId
-                        ? { id: p.id, entryCount: p.entryCount ?? 0, entries: p.entries, ...updatedData }
-                        : p
-                    ) ?? []
-                  }
+                  ...u,
+                  pets: u.pets?.map(p =>
+                    p.id === itemId
+                      ? { id: p.id, entryCount: p.entryCount ?? 0, entries: p.entries, ...updatedData }
+                      : p
+                  ) ?? []
+                }
                 : u
             ));
           } else if (coll === 'events') {
             setUsers(prev => prev.map(u =>
               u.id === userId
                 ? {
-                    ...u,
-                    events: u.events?.map(e =>
-                      e.id === itemId
-                        ? { id: e.id, ...updatedData }
-                        : e
-                    ) ?? []
-                  }
+                  ...u,
+                  events: u.events?.map(e =>
+                    e.id === itemId
+                      ? { id: e.id, ...updatedData }
+                      : e
+                  ) ?? []
+                }
                 : u
             ));
           }
@@ -309,25 +337,24 @@ export default function AdminPage() {
           setUsers(prev => prev.map(u =>
             u.id === userId
               ? {
-                  ...u,
-                  pets: u.pets?.map(p =>
-                    p.id === petId
-                      ? {
-                          ...p,
-                          entries: p.entries?.map(en =>
-                            en.id === entryId
-                              ? { id: en.id, ...updatedData }
-                              : en
-                          ) ?? []
-                        }
-                      : p
-                  ) ?? []
-                }
+                ...u,
+                pets: u.pets?.map(p =>
+                  p.id === petId
+                    ? {
+                      ...p,
+                      entries: p.entries?.map(en =>
+                        en.id === entryId
+                          ? { id: en.id, ...updatedData }
+                          : en
+                      ) ?? []
+                    }
+                    : p
+                ) ?? []
+              }
               : u
           ));
         }
       }
-
       alert("Saved successfully!");
       cancelEdit(path);
     } catch (error: any) {
@@ -345,10 +372,10 @@ export default function AdminPage() {
     if (!searchQuery) return users;
     const q = searchQuery.toLowerCase();
     return users.filter(user => {
-      if (searchField === 'id') return user.id.toLowerCase().includes(q);
       if (searchField === 'email') return String(user.email || '').toLowerCase().includes(q);
-      if (searchField === 'displayName') return String(user.displayName || user.name || '').toLowerCase().includes(q);
-      return Object.values(user).some(val => String(val).toLowerCase().includes(q));
+      if (searchField === 'username') { return String(user.username || '').toLowerCase().includes(q); }      
+      // 'any' - search all fields (including nested ones will be stringified)
+      return Object.values(user).some(val => String(val ?? '').toLowerCase().includes(q));
     });
   }, [users, searchQuery, searchField]);
   if (checkingAuth) {
@@ -392,7 +419,7 @@ export default function AdminPage() {
               <input
                 value={searchQuery}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                placeholder="Search database..."
+                placeholder="Search users..."
                 className="border rounded px-4 py-2 text-sm w-full md:w-80"
               />
               <select
@@ -401,9 +428,8 @@ export default function AdminPage() {
                 className="border rounded px-3 py-2 text-sm"
               >
                 <option value="any">Any Field</option>
-                <option value="id">User ID</option>
                 <option value="email">Email</option>
-                <option value="displayName">Name</option>
+                <option value="username">Username</option>
               </select>
               <div className="text-xs text-gray-400">Found {filteredUsers.length} users</div>
             </div>
@@ -412,6 +438,7 @@ export default function AdminPage() {
             ) : (
               filteredUsers.map(user => {
                 const uPath = `users/${user.id}`;
+                const displayIdentifier = user.username || user.email || user.id;
                 return (
                   <div key={user.id} className="mb-6 border rounded-xl overflow-hidden shadow-sm">
                     <div className="bg-gray-100 p-4 flex justify-between items-center">
@@ -429,7 +456,10 @@ export default function AdminPage() {
                         className="font-bold text-gray-700 flex items-center gap-2"
                       >
                         <span>{expandedUsers[user.id] ? '▼' : '▶'}</span>
-                        User: {user.email || user.id}
+                        {displayIdentifier}
+                        {displayIdentifier !== user.id && (
+                          <span className="text-xs text-gray-500 ml-2">(ID: {user.id})</span>
+                        )}
                       </button>
                       <div className="flex gap-2">
                         {editMode[uPath] ? (
