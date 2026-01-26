@@ -167,7 +167,7 @@ export default function PetHealthTracker() {
             </div>
             <div className="p-6">
               {/* Added toLowerCase() check for your "dog" string */}
-              <img src={currentProfile.type?.toLowerCase() === 'cat' ? '/images/Cat_BCS.png' : '/images/Dog_BCS.png'} alt="BCS Guide" className="w-full h-auto" />
+              <img src={currentProfile.type?.toLowerCase() === 'cat' ? '/images/cat_BCS.jpg' : '/images/dog_BCS.jpg'} alt="BCS Guide" className="w-full h-auto" />
             </div>
           </div>
         </div>
